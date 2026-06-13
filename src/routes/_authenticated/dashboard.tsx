@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Sparkles,
   History,
+  Github,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
