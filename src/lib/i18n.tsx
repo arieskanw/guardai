@@ -125,6 +125,25 @@ const dict = {
   "hist.confirmDelete": { id: "Hapus review ini?", en: "Delete this review?" },
   "hist.back": { id: "Kembali ke riwayat", en: "Back to history" },
   "hist.code": { id: "Code yang direview", en: "Reviewed code" },
+
+  "nav.integrations": { id: "Integrasi", en: "Integrations" },
+  "gh.title": { id: "Integrasi GitHub", en: "GitHub Integration" },
+  "gh.subtitle": { id: "Pasang GitHub App agar setiap Pull Request otomatis direview.", en: "Install the GitHub App so every Pull Request gets reviewed automatically." },
+  "gh.install": { id: "Pasang GitHub App", en: "Install GitHub App" },
+  "gh.notConfigured": { id: "GitHub App belum di-setup oleh admin.", en: "GitHub App is not yet configured by the admin." },
+  "gh.connected": { id: "Akun terhubung", en: "Connected accounts" },
+  "gh.empty": { id: "Belum ada akun GitHub yang terhubung.", en: "No GitHub account connected yet." },
+  "gh.repos": { id: "repo", en: "repos" },
+  "gh.unlink": { id: "Putuskan", en: "Unlink" },
+  "gh.linking": { id: "Menghubungkan instalasi…", en: "Linking installation…" },
+  "gh.linked": { id: "GitHub App terhubung", en: "GitHub App connected" },
+  "gh.prReviews": { id: "Review Pull Request", en: "Pull Request Reviews" },
+  "gh.prEmpty": { id: "Belum ada review otomatis. Buka PR untuk memicu review pertama.", en: "No automatic reviews yet. Open a PR to trigger your first review." },
+  "gh.status.running": { id: "Berjalan", en: "Running" },
+  "gh.status.completed": { id: "Selesai", en: "Completed" },
+  "gh.status.failed": { id: "Gagal", en: "Failed" },
+  "gh.status.skipped": { id: "Dilewati", en: "Skipped" },
+  "gh.viewPr": { id: "Lihat PR", en: "View PR" },
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;
