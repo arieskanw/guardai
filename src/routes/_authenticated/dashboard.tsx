@@ -119,8 +119,14 @@ function DashboardPage() {
             </span>
             <span className="truncate text-base font-semibold">AI Code Guardian</span>
           </Link>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">{user?.email}</span>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/history">
+                <History className="mr-1.5 h-4 w-4" />
+                {t("dash.history")}
+              </Link>
+            </Button>
             <Button size="sm" variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-1.5 h-4 w-4" />
               {t("nav.signout")}
