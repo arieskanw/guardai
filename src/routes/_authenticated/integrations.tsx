@@ -25,13 +25,15 @@ import {
   Trash2,
 } from "lucide-react";
 
-const searchSchema = z.object({
-  installation_id: z.coerce.number().int().positive().optional(),
-  setup_action: z.string().optional(),
-});
+const searchSchema = z
+  .object({
+    installation_id: z.coerce.number().int().positive().optional(),
+    setup_action: z.string().optional(),
+  })
+  .passthrough();
 
 export const Route = createFileRoute("/_authenticated/integrations")({
-  validateSearch: (s) => searchSchema.parse(s),
+  validateSearch: (s: Record<string, unknown>) => searchSchema.parse(s ?? {}),
   head: () => ({
     meta: [
       { title: "Integrations — AI Code Guardian" },
