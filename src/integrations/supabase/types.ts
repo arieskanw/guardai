@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      github_installations: {
+        Row: {
+          account_id: number
+          account_login: string
+          account_type: string
+          created_at: string
+          id: string
+          installation_id: number
+          repositories: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: number
+          account_login: string
+          account_type: string
+          created_at?: string
+          id?: string
+          installation_id: number
+          repositories?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: number
+          account_login?: string
+          account_type?: string
+          created_at?: string
+          id?: string
+          installation_id?: number
+          repositories?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pr_reviews: {
+        Row: {
+          comment_id: number | null
+          commit_sha: string
+          created_at: string
+          findings_count: number
+          id: string
+          installation_id: number
+          pr_number: number
+          pr_title: string
+          pr_url: string
+          quality_score: number
+          repo_full_name: string
+          result: Json
+          security_issues_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          comment_id?: number | null
+          commit_sha: string
+          created_at?: string
+          findings_count?: number
+          id?: string
+          installation_id: number
+          pr_number: number
+          pr_title: string
+          pr_url: string
+          quality_score?: number
+          repo_full_name: string
+          result?: Json
+          security_issues_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          comment_id?: number | null
+          commit_sha?: string
+          created_at?: string
+          findings_count?: number
+          id?: string
+          installation_id?: number
+          pr_number?: number
+          pr_title?: string
+          pr_url?: string
+          quality_score?: number
+          repo_full_name?: string
+          result?: Json
+          security_issues_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           code: string

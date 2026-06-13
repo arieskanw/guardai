@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Sparkles,
   History,
+  Github,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -125,6 +126,12 @@ function DashboardPage() {
               <Link to="/history">
                 <History className="mr-1.5 h-4 w-4" />
                 {t("dash.history")}
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/integrations">
+                <Github className="mr-1.5 h-4 w-4" />
+                {t("nav.integrations")}
               </Link>
             </Button>
             <Button size="sm" variant="ghost" onClick={handleSignOut}>
