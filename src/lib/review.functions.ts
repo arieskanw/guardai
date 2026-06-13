@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateText } from "ai";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
