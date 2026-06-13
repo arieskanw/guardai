@@ -29,6 +29,7 @@ import {
   Check,
   AlertTriangle,
   Sparkles,
+  History,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
