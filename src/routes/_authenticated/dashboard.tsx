@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { reviewCode, type ReviewFinding, type ReviewResult, type Severity } from "@/lib/review.functions";
+import { reviewCode, saveReview, type ReviewFinding, type ReviewResult, type Severity } from "@/lib/review.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -29,6 +29,7 @@ import {
   Check,
   AlertTriangle,
   Sparkles,
+  History,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -63,6 +64,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const runReview = useServerFn(reviewCode);
+  const persist = useServerFn(saveReview);
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("typescript");
@@ -72,6 +74,23 @@ function DashboardPage() {
   const mutation = useMutation({
     mutationFn: (vars: { code: string; language: string; framework: string; guidelines: string }) =>
       runReview({ data: vars }),
+    onSuccess: async (result, vars) => {
+      try {
+        const title = vars.code.split("\n")[0]?.slice(0, 80) || "Untitled review";
+        await persist({
+          data: {
+            title,
+            language: vars.language,
+            framework: vars.framework,
+            code: vars.code,
+            result,
+          },
+        });
+        toast.success(t("dash.saved"));
+      } catch {
+        // non-blocking
+      }
+    },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : t("dash.error"));
     },
@@ -100,8 +119,14 @@ function DashboardPage() {
             </span>
             <span className="truncate text-base font-semibold">AI Code Guardian</span>
           </Link>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">{user?.email}</span>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/history">
+                <History className="mr-1.5 h-4 w-4" />
+                {t("dash.history")}
+              </Link>
+            </Button>
             <Button size="sm" variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-1.5 h-4 w-4" />
               {t("nav.signout")}

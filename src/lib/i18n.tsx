@@ -109,6 +109,22 @@ const dict = {
   "dash.error": { id: "Gagal menjalankan review. Coba lagi.", en: "Review failed. Please try again." },
   "dash.copy": { id: "Salin", en: "Copy" },
   "dash.copied": { id: "Tersalin", en: "Copied" },
+  "dash.saved": { id: "Review tersimpan ke riwayat", en: "Review saved to history" },
+  "dash.history": { id: "Riwayat", en: "History" },
+  "dash.newReview": { id: "Review baru", en: "New review" },
+
+  "hist.title": { id: "Riwayat Review", en: "Review History" },
+  "hist.subtitle": { id: "Semua review yang pernah kamu jalankan.", en: "All your past reviews." },
+  "hist.empty": { id: "Belum ada riwayat. Jalankan review pertamamu.", en: "No history yet. Run your first review." },
+  "hist.score": { id: "Skor", en: "Score" },
+  "hist.findings": { id: "Findings", en: "Findings" },
+  "hist.security": { id: "Security", en: "Security" },
+  "hist.view": { id: "Lihat", en: "View" },
+  "hist.delete": { id: "Hapus", en: "Delete" },
+  "hist.deleted": { id: "Review dihapus", en: "Review deleted" },
+  "hist.confirmDelete": { id: "Hapus review ini?", en: "Delete this review?" },
+  "hist.back": { id: "Kembali ke riwayat", en: "Back to history" },
+  "hist.code": { id: "Code yang direview", en: "Reviewed code" },
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

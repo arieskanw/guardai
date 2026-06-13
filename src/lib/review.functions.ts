@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateText } from "ai";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
@@ -109,4 +110,79 @@ ${data.code}
     };
 
     return result;
+  });
+
+// ============ Review history (DB-backed) ============
+
+const saveSchema = z.object({
+  title: z.string().min(1).max(200),
+  language: z.string().min(1).max(40),
+  framework: z.string().max(80).optional().default(""),
+  code: z.string().min(1).max(50_000),
+  result: z.object({
+    summary: z.string(),
+    qualityScore: z.number(),
+    findings: z.array(z.any()),
+    security: z.array(z.any()),
+    tests: z.string(),
+  }),
+});
+
+export const saveReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => saveSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error } = await supabase
+      .from("reviews")
+      .insert({
+        user_id: userId,
+        title: data.title,
+        language: data.language,
+        framework: data.framework || null,
+        code: data.code,
+        quality_score: Math.round(data.result.qualityScore),
+        findings_count: data.result.findings.length,
+        security_issues_count: data.result.security.length,
+        result: data.result,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id as string };
+  });
+
+export const listReviews = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("reviews")
+      .select("id,title,language,framework,quality_score,findings_count,security_issues_count,created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const getReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("reviews")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Not found");
+    return row;
+  });
+
+export const deleteReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("reviews").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
