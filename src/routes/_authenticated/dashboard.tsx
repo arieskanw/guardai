@@ -64,6 +64,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const runReview = useServerFn(reviewCode);
+  const persist = useServerFn(saveReview);
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("typescript");
@@ -73,6 +74,23 @@ function DashboardPage() {
   const mutation = useMutation({
     mutationFn: (vars: { code: string; language: string; framework: string; guidelines: string }) =>
       runReview({ data: vars }),
+    onSuccess: async (result, vars) => {
+      try {
+        const title = vars.code.split("\n")[0]?.slice(0, 80) || "Untitled review";
+        await persist({
+          data: {
+            title,
+            language: vars.language,
+            framework: vars.framework,
+            code: vars.code,
+            result,
+          },
+        });
+        toast.success(t("dash.saved"));
+      } catch {
+        // non-blocking
+      }
+    },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : t("dash.error"));
     },
