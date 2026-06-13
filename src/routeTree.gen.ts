@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHistoryIdRouteImport } from './routes/_authenticated/history.$id'
@@ -37,6 +38,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedIntegrationsRoute =
+  AuthenticatedIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
@@ -73,6 +81,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
@@ -84,6 +93,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/dashboard'
     | '/history'
+    | '/integrations'
     | '/history/$id'
     | '/api/public/github/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/dashboard'
     | '/history'
+    | '/integrations'
     | '/history/$id'
     | '/api/public/github/webhook'
   id:
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
+    | '/_authenticated/integrations'
     | '/_authenticated/history/$id'
     | '/api/public/github/webhook'
   fileRoutesById: FileRoutesById
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/integrations': {
+      id: '/_authenticated/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
       id: '/_authenticated/history'
@@ -201,11 +221,13 @@ const AuthenticatedHistoryRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
+  AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
+  AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -221,3 +243,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
