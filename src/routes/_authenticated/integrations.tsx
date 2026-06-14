@@ -8,6 +8,7 @@ import {
   linkInstallation,
   listInstallations,
   listPrReviews,
+  syncExistingInstallation,
   unlinkInstallation,
 } from "@/lib/github.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ import {
   Loader2,
   LogOut,
   Plus,
+  RefreshCw,
   Shield,
   Trash2,
 } from "lucide-react";
@@ -54,6 +56,7 @@ function IntegrationsPage() {
   const listFn = useServerFn(listInstallations);
   const prFn = useServerFn(listPrReviews);
   const linkFn = useServerFn(linkInstallation);
+  const syncFn = useServerFn(syncExistingInstallation);
   const unlinkFn = useServerFn(unlinkInstallation);
 
   const { data: cfg } = useQuery({ queryKey: ["gh-cfg"], queryFn: () => cfgFn() });
@@ -75,6 +78,19 @@ function IntegrationsPage() {
   const unlink = useMutation({
     mutationFn: (id: number) => unlinkFn({ data: { installation_id: id } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["gh-installs"] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const sync = useMutation({
+    mutationFn: () => syncFn(),
+    onSuccess: (r) => {
+      if (r.ok) {
+        toast.success(`${t("gh.linked")} — ${r.account} (${r.repos} ${t("gh.repos")})`);
+        qc.invalidateQueries({ queryKey: ["gh-installs"] });
+        return;
+      }
+      toast.error(t(r.reason === "multiple" ? "gh.syncMultiple" : "gh.syncNone"));
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
@@ -144,12 +160,27 @@ function IntegrationsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold">{t("gh.connected")}</h2>
             {installUrl && (
-              <Button asChild size="sm">
-                <a href={installUrl} target="_blank" rel="noreferrer">
-                  <Github className="mr-1.5 h-4 w-4" />
-                  {t("gh.install")}
-                </a>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => sync.mutate()}
+                  disabled={sync.isPending}
+                >
+                  {sync.isPending ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-1.5 h-4 w-4" />
+                  )}
+                  {t("gh.sync")}
+                </Button>
+                <Button asChild size="sm">
+                  <a href={installUrl}>
+                    <Github className="mr-1.5 h-4 w-4" />
+                    {t("gh.install")}
+                  </a>
+                </Button>
+              </div>
             )}
           </div>
 
