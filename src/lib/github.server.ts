@@ -65,6 +65,28 @@ export async function getInstallation(installationId: number) {
   };
 }
 
+export async function listAppInstallations() {
+  const jwt = await createAppJwt();
+  const res = await fetch(`${GH_API}/app/installations?per_page=100`, {
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to list installations: ${res.status}`);
+  const data = (await res.json()) as Array<{
+    id: number;
+    created_at?: string;
+    account: { login: string; id: number; type: string };
+  }>;
+  return data.map((i) => ({
+    id: i.id,
+    created_at: i.created_at ?? null,
+    account: i.account,
+  }));
+}
+
 export async function listInstallationRepos(installationId: number) {
   const token = await getInstallationToken(installationId);
   const res = await fetch(`${GH_API}/installation/repositories?per_page=100`, {
