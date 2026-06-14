@@ -1,5 +1,6 @@
 // Server-only GitHub App helpers
 import { SignJWT, importPKCS8 } from "jose";
+import { createPrivateKey } from "crypto";
 
 const GH_API = "https://api.github.com";
 
@@ -20,8 +21,14 @@ function derSequence(...parts: Buffer[]) {
 }
 
 function normalizePrivateKeyPem(privateKey: string) {
-  const pem = privateKey.replace(/\\n/g, "\n").trim();
+  const pem = privateKey.replace(/\\n/g, "\n").trim().replace(/^['"]|['"]$/g, "");
   if (pem.includes("BEGIN PRIVATE KEY")) return pem;
+  try {
+    const key = createPrivateKey(pem);
+    return key.export({ format: "pem", type: "pkcs8" }).toString();
+  } catch {
+    // Fall back to a small PKCS#1 wrapper below.
+  }
   if (!pem.includes("BEGIN RSA PRIVATE KEY")) return pem;
 
   const base64 = pem.replace(/-----BEGIN RSA PRIVATE KEY-----|-----END RSA PRIVATE KEY-----|\s/g, "");
