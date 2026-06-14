@@ -2,9 +2,28 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+function normalizeGithubAppSlug(value: string | undefined) {
+  const raw = value?.trim();
+  if (!raw) return null;
+
+  try {
+    const url = new URL(raw);
+    const [, appsSegment, slug] = url.pathname.split("/");
+    if (url.hostname === "github.com" && appsSegment === "apps" && slug) {
+      return slug;
+    }
+  } catch {
+    // Not a full URL; fall through and treat it as a slug/path.
+  }
+
+  const parts = raw.split("/").filter(Boolean);
+  const appsIndex = parts.indexOf("apps");
+  return appsIndex >= 0 ? parts[appsIndex + 1] || null : parts[0] || null;
+}
+
 export const getGithubConfig = createServerFn({ method: "GET" }).handler(async () => {
   return {
-    appSlug: process.env.GITHUB_APP_SLUG || null,
+    appSlug: normalizeGithubAppSlug(process.env.GITHUB_APP_SLUG),
     configured: Boolean(process.env.GITHUB_APP_ID && process.env.GITHUB_APP_PRIVATE_KEY),
   };
 });
