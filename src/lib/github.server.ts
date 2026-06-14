@@ -1,6 +1,5 @@
 // Server-only GitHub App helpers
-import { SignJWT, importPKCS8 } from "jose";
-import { createPrivateKey } from "crypto";
+import { createPrivateKey, createSign } from "crypto";
 
 const GH_API = "https://api.github.com";
 
@@ -56,14 +55,14 @@ function getAppCreds() {
 
 export async function createAppJwt(): Promise<string> {
   const { appId, privateKey } = getAppCreds();
-  const key = await importPKCS8(privateKey, "RS256");
   const now = Math.floor(Date.now() / 1000);
-  return await new SignJWT({})
-    .setProtectedHeader({ alg: "RS256" })
-    .setIssuedAt(now - 30)
-    .setExpirationTime(now + 9 * 60)
-    .setIssuer(appId)
-    .sign(key);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = { iat: now - 30, exp: now + 9 * 60, iss: appId };
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const body = `${encodedHeader}.${encodedPayload}`;
+  const signature = createSign("RSA-SHA256").update(body).sign(createPrivateKey(privateKey), "base64url");
+  return `${body}.${signature}`;
 }
 
 type InstallTokenCache = { token: string; expiresAt: number };
