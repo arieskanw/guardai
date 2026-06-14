@@ -54,6 +54,50 @@ export const linkInstallation = createServerFn({ method: "POST" })
     return { ok: true, account: inst.account.login, repos: repos.length };
   });
 
+export const syncExistingInstallation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { listAppInstallations, listInstallationRepos } = await import("./github.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: linked, error: linkedError } = await supabaseAdmin
+      .from("github_installations")
+      .select("installation_id");
+    if (linkedError) throw new Error(linkedError.message);
+
+    const linkedIds = new Set((linked ?? []).map((i) => Number(i.installation_id)));
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const candidates = (await listAppInstallations())
+      .filter((i) => !linkedIds.has(i.id))
+      .filter((i) => !i.created_at || new Date(i.created_at).getTime() >= oneDayAgo)
+      .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());
+
+    if (candidates.length === 0) {
+      return { ok: false, reason: "none" as const };
+    }
+    if (candidates.length > 1) {
+      return { ok: false, reason: "multiple" as const };
+    }
+
+    const inst = candidates[0];
+    const repos = await listInstallationRepos(inst.id);
+    const { error } = await supabaseAdmin
+      .from("github_installations")
+      .upsert(
+        {
+          user_id: context.userId,
+          installation_id: inst.id,
+          account_login: inst.account.login,
+          account_type: inst.account.type,
+          account_id: inst.account.id,
+          repositories: repos,
+        },
+        { onConflict: "installation_id" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true, account: inst.account.login, repos: repos.length };
+  });
+
 export const listInstallations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

@@ -1,11 +1,52 @@
 // Server-only GitHub App helpers
-import { SignJWT, importPKCS8 } from "jose";
+import { createPrivateKey, createSign } from "crypto";
 
 const GH_API = "https://api.github.com";
 
+function derLength(length: number) {
+  if (length < 128) return Buffer.from([length]);
+  const bytes: number[] = [];
+  let value = length;
+  while (value > 0) {
+    bytes.unshift(value & 0xff);
+    value >>= 8;
+  }
+  return Buffer.from([0x80 | bytes.length, ...bytes]);
+}
+
+function derSequence(...parts: Buffer[]) {
+  const body = Buffer.concat(parts);
+  return Buffer.concat([Buffer.from([0x30]), derLength(body.length), body]);
+}
+
+function normalizePrivateKeyPem(privateKey: string) {
+  const pem = privateKey.replace(/\\n/g, "\n").trim().replace(/^['"]|['"]$/g, "");
+  if (pem.includes("BEGIN PRIVATE KEY")) return pem;
+  try {
+    const key = createPrivateKey(pem);
+    return key.export({ format: "pem", type: "pkcs8" }).toString();
+  } catch {
+    // Fall back to a small PKCS#1 wrapper below.
+  }
+  if (!pem.includes("BEGIN RSA PRIVATE KEY")) return pem;
+
+  const base64 = pem.replace(/-----BEGIN RSA PRIVATE KEY-----|-----END RSA PRIVATE KEY-----|\s/g, "");
+  const rsaKey = Buffer.from(base64, "base64");
+  const version = Buffer.from([0x02, 0x01, 0x00]);
+  const rsaOid = derSequence(
+    Buffer.from([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]),
+    Buffer.from([0x05, 0x00]),
+  );
+  const wrappedKey = Buffer.concat([Buffer.from([0x04]), derLength(rsaKey.length), rsaKey]);
+  const pkcs8 = derSequence(version, rsaOid, wrappedKey).toString("base64");
+  return `-----BEGIN PRIVATE KEY-----\n${pkcs8.match(/.{1,64}/g)?.join("\n")}\n-----END PRIVATE KEY-----`;
+}
+
 function getAppCreds() {
   const appId = process.env.GITHUB_APP_ID;
-  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY
+    ? normalizePrivateKeyPem(process.env.GITHUB_APP_PRIVATE_KEY)
+    : undefined;
   if (!appId || !privateKey) {
     throw new Error("GitHub App is not configured (missing GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY)");
   }
@@ -14,14 +55,14 @@ function getAppCreds() {
 
 export async function createAppJwt(): Promise<string> {
   const { appId, privateKey } = getAppCreds();
-  const key = await importPKCS8(privateKey, "RS256");
   const now = Math.floor(Date.now() / 1000);
-  return await new SignJWT({})
-    .setProtectedHeader({ alg: "RS256" })
-    .setIssuedAt(now - 30)
-    .setExpirationTime(now + 9 * 60)
-    .setIssuer(appId)
-    .sign(key);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = { iat: now - 30, exp: now + 9 * 60, iss: appId };
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const body = `${encodedHeader}.${encodedPayload}`;
+  const signature = createSign("RSA-SHA256").update(body).sign(createPrivateKey(privateKey), "base64url");
+  return `${body}.${signature}`;
 }
 
 type InstallTokenCache = { token: string; expiresAt: number };
@@ -63,6 +104,28 @@ export async function getInstallation(installationId: number) {
     id: number;
     account: { login: string; id: number; type: string };
   };
+}
+
+export async function listAppInstallations() {
+  const jwt = await createAppJwt();
+  const res = await fetch(`${GH_API}/app/installations?per_page=100`, {
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to list installations: ${res.status}`);
+  const data = (await res.json()) as Array<{
+    id: number;
+    created_at?: string;
+    account: { login: string; id: number; type: string };
+  }>;
+  return data.map((i) => ({
+    id: i.id,
+    created_at: i.created_at ?? null,
+    account: i.account,
+  }));
 }
 
 export async function listInstallationRepos(installationId: number) {
