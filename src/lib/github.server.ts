@@ -3,9 +3,44 @@ import { SignJWT, importPKCS8 } from "jose";
 
 const GH_API = "https://api.github.com";
 
+function derLength(length: number) {
+  if (length < 128) return Buffer.from([length]);
+  const bytes: number[] = [];
+  let value = length;
+  while (value > 0) {
+    bytes.unshift(value & 0xff);
+    value >>= 8;
+  }
+  return Buffer.from([0x80 | bytes.length, ...bytes]);
+}
+
+function derSequence(...parts: Buffer[]) {
+  const body = Buffer.concat(parts);
+  return Buffer.concat([Buffer.from([0x30]), derLength(body.length), body]);
+}
+
+function normalizePrivateKeyPem(privateKey: string) {
+  const pem = privateKey.replace(/\\n/g, "\n").trim();
+  if (pem.includes("BEGIN PRIVATE KEY")) return pem;
+  if (!pem.includes("BEGIN RSA PRIVATE KEY")) return pem;
+
+  const base64 = pem.replace(/-----BEGIN RSA PRIVATE KEY-----|-----END RSA PRIVATE KEY-----|\s/g, "");
+  const rsaKey = Buffer.from(base64, "base64");
+  const version = Buffer.from([0x02, 0x01, 0x00]);
+  const rsaOid = derSequence(
+    Buffer.from([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]),
+    Buffer.from([0x05, 0x00]),
+  );
+  const wrappedKey = Buffer.concat([Buffer.from([0x04]), derLength(rsaKey.length), rsaKey]);
+  const pkcs8 = derSequence(version, rsaOid, wrappedKey).toString("base64");
+  return `-----BEGIN PRIVATE KEY-----\n${pkcs8.match(/.{1,64}/g)?.join("\n")}\n-----END PRIVATE KEY-----`;
+}
+
 function getAppCreds() {
   const appId = process.env.GITHUB_APP_ID;
-  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY
+    ? normalizePrivateKeyPem(process.env.GITHUB_APP_PRIVATE_KEY)
+    : undefined;
   if (!appId || !privateKey) {
     throw new Error("GitHub App is not configured (missing GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY)");
   }
