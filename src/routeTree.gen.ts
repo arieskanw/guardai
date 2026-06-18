@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -34,6 +36,16 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -110,6 +122,8 @@ const ApiAuthGithubCallbackRoute = ApiAuthGithubCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -127,6 +141,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -146,6 +162,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -165,6 +183,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/forgot-password'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/verify-email'
     | '/billing'
@@ -182,6 +202,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/forgot-password'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/verify-email'
     | '/billing'
@@ -200,6 +222,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/forgot-password'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/verify-email'
     | '/_authenticated/billing'
@@ -219,6 +243,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiMidtransCallbackRoute: typeof ApiMidtransCallbackRoute
@@ -240,6 +266,20 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -381,6 +421,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ApiMidtransCallbackRoute: ApiMidtransCallbackRoute,

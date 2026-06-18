@@ -148,6 +148,16 @@ function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {mode === "signin" && (
+                <div className="text-right">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-muted-foreground underline hover:text-primary transition-colors"
+                  >
+                    {t("auth.forgotPass")}
+                  </Link>
+                </div>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

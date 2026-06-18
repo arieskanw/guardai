@@ -50,20 +50,40 @@ export function generateOtp(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-export function buildOtpEmailHtml(otp: string): string {
+export function buildOtpEmailHtml(otp: string, title = "Verify your email"): string {
   return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:40px 20px">
-  <div style="max-width:480px;margin:0 auto;background:white;border-radius:16px;padding:40px 32px;box-shadow:0 4px 12px rgba(0,0,0,0.08)">
-    <div style="text-align:center;margin-bottom:24px">
-      <span style="display:inline-block;width:48px;height:48px;line-height:48px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;font-size:24px;font-weight:bold">G</span>
-    </div>
-    <h1 style="text-align:center;font-size:22px;margin:0 0 8px;color:#1a1a2e">Verify your email</h1>
-    <p style="text-align:center;font-size:14px;color:#666;margin:0 0 28px">Enter this code to activate your GuardAI account</p>
-    <div style="text-align:center;font-size:36px;font-weight:bold;letter-spacing:8px;color:#6366f1;background:#f0f0ff;border-radius:12px;padding:20px;margin-bottom:28px;font-family:monospace">${otp}</div>
-    <p style="text-align:center;font-size:12px;color:#999;margin:0">Code expires in 10 minutes &middot; GuardAI &mdash; AI code review</p>
-  </div>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f8;padding:40px 16px">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width:480px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
+          <tr>
+            <td style="padding:40px 32px 8px;text-align:center">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:26px;font-weight:700;line-height:1">G</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px 0;text-align:center">
+              <h1 style="margin:0;font-size:22px;font-weight:700;color:#1a1a2e;letter-spacing:-0.3px">${title}</h1>
+              <p style="margin:8px 0 0;font-size:14px;color:#6b7280;line-height:1.5">Use the code below to complete your verification. This code expires in <strong>10 minutes</strong>.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px">
+              <div style="text-align:center;font-size:40px;font-weight:700;letter-spacing:10px;color:#6366f1;background:#f0f0ff;border-radius:12px;padding:24px 16px;font-family:'SF Mono','Menlo','Monaco','Courier New',monospace;border:1px solid rgba(99,102,241,0.15)">${otp}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 28px;text-align:center">
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.5">If you didn't request this, you can safely ignore this email.<br>&copy; ${new Date().getFullYear()} GuardAI &mdash; AI code review</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }

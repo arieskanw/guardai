@@ -368,3 +368,82 @@ export const changePassword = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+// ============ Forgot Password ============
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const forgotPassword = createServerFn({ method: "POST" })
+  .validator((d: unknown) => forgotPasswordSchema.parse(d))
+  .handler(async ({ data }) => {
+    const user = await queryOne<{ id: string; email: string }>(
+      "SELECT id, email FROM users WHERE email = $1 AND password_hash IS NOT NULL",
+      [data.email]
+    );
+
+    // Don't reveal if email exists — always return ok
+    if (!user) return { ok: true };
+
+    const { generateOtp, sendEmail, buildOtpEmailHtml, buildOtpEmailText } = await import("./email.server");
+    const otp = generateOtp();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await query(
+      "UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3",
+      [otp, otpExpires.toISOString(), user.id]
+    );
+
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your GuardAI password",
+      text: `Reset your GuardAI password\n\nYour reset code: ${otp}\n\nCode expires in 10 minutes.\n- GuardAI Team`,
+      html: buildOtpEmailHtml(otp, "Reset your password"),
+    });
+
+    return { ok: true };
+  });
+
+// ============ Reset Password ============
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+  newPassword: z.string().min(8).max(128),
+});
+
+export const resetPassword = createServerFn({ method: "POST" })
+  .validator((d: unknown) => resetPasswordSchema.parse(d))
+  .handler(async ({ data }) => {
+    const user = await queryOne<{
+      id: string;
+      otp_code: string | null;
+      otp_expires_at: string | null;
+    }>(
+      "SELECT id, otp_code, otp_expires_at FROM users WHERE email = $1 AND password_hash IS NOT NULL",
+      [data.email]
+    );
+
+    if (!user) throw new Error("Invalid or expired reset code");
+
+    if (!user.otp_code || !user.otp_expires_at) {
+      throw new Error("No reset code found. Request a new one.");
+    }
+
+    if (user.otp_code !== data.otp) {
+      throw new Error("Invalid reset code");
+    }
+
+    if (new Date(user.otp_expires_at) < new Date()) {
+      throw new Error("Reset code has expired. Request a new one.");
+    }
+
+    const newHash = await bcrypt.hash(data.newPassword, 12);
+    await query(
+      "UPDATE users SET password_hash = $1, otp_code = NULL, otp_expires_at = NULL WHERE id = $2",
+      [newHash, user.id]
+    );
+
+    return { ok: true };
+  });
