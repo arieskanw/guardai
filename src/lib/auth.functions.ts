@@ -37,10 +37,30 @@ export const register = createServerFn({ method: "POST" })
       [data.email, passwordHash, data.displayName || data.email.split("@")[0]]
     );
 
+    // Generate & send OTP
+    const { generateOtp, sendEmail, buildOtpEmailHtml, buildOtpEmailText } = await import("./email.server");
+    const otp = generateOtp();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await query(
+      "UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3",
+      [otp, otpExpires.toISOString(), user!.id]
+    );
+
+    // Fire-and-forget email send (don't block registration)
+    sendEmail({
+      to: user!.email,
+      subject: "Verify your GuardAI email",
+      text: buildOtpEmailText(otp),
+      html: buildOtpEmailHtml(otp),
+    }).then((r) => {
+      if (!r.ok) console.warn("[auth] Failed to send verification email:", r.error);
+    });
+
     const token = await createToken(user!.id, user!.email);
     return {
       token,
-      user: { id: user!.id, email: user!.email },
+      user: { id: user!.id, email: user!.email, email_verified: false },
     };
   });
 
@@ -60,7 +80,8 @@ export const login = createServerFn({ method: "POST" })
       password_hash: string;
       display_name: string | null;
       avatar_url: string | null;
-    }>("SELECT id, email, password_hash, display_name, avatar_url FROM users WHERE email = $1", [
+      email_verified_at: string | null;
+    }>("SELECT id, email, password_hash, display_name, avatar_url, email_verified_at FROM users WHERE email = $1", [
       data.email,
     ]);
 
@@ -78,6 +99,7 @@ export const login = createServerFn({ method: "POST" })
         email: user.email,
         display_name: user.display_name,
         avatar_url: user.avatar_url,
+        email_verified: !!user.email_verified_at,
       },
     };
   });
@@ -166,8 +188,8 @@ export const handleGithubCallback = createServerFn({ method: "POST" })
 
     // Create new user
     const newUser = await queryOne<{ id: string }>(
-      `INSERT INTO users (email, github_id, github_login, display_name, avatar_url)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO users (email, github_id, github_login, display_name, avatar_url, email_verified_at)
+       VALUES ($1, $2, $3, $4, $5, now())
        RETURNING id`,
       [primaryEmail, ghUser.id, ghUser.login, ghUser.name || ghUser.login, ghUser.avatar_url]
     );
@@ -185,7 +207,99 @@ export const handleGithubCallback = createServerFn({ method: "POST" })
 export const getMe = createServerFn({ method: "GET" })
   .middleware([requireAuth])
   .handler(async ({ context }) => {
-    return context.user;
+    return {
+      ...context.user,
+      email_verified: !!context.user.email_verified_at,
+    };
+  });
+
+// ============ Verify OTP ============
+
+const verifyOtpSchema = z.object({
+  otp: z.string().length(6),
+});
+
+export const verifyOtp = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((d: unknown) => verifyOtpSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const user = await queryOne<{
+      otp_code: string | null;
+      otp_expires_at: string | null;
+      email_verified_at: string | null;
+    }>(
+      "SELECT otp_code, otp_expires_at, email_verified_at FROM users WHERE id = $1",
+      [context.userId]
+    );
+    if (!user) throw new Error("User not found");
+
+    // Already verified
+    if (user.email_verified_at) {
+      return { ok: true, alreadyVerified: true };
+    }
+
+    // Check code
+    if (!user.otp_code || !user.otp_expires_at) {
+      throw new Error("No OTP found. Request a new one.");
+    }
+
+    if (user.otp_code !== data.otp) {
+      throw new Error("Invalid verification code");
+    }
+
+    if (new Date(user.otp_expires_at) < new Date()) {
+      throw new Error("OTP has expired. Request a new one.");
+    }
+
+    await query(
+      `UPDATE users SET email_verified_at = now(), otp_code = NULL, otp_expires_at = NULL WHERE id = $1`,
+      [context.userId]
+    );
+
+    return { ok: true, alreadyVerified: false };
+  });
+
+// ============ Resend OTP ============
+
+export const resendOtp = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .handler(async ({ context }) => {
+    const user = await queryOne<{
+      email: string | null;
+      email_verified_at: string | null;
+    }>(
+      "SELECT email, email_verified_at FROM users WHERE id = $1",
+      [context.userId]
+    );
+    if (!user) throw new Error("User not found");
+
+    if (user.email_verified_at) {
+      return { ok: true, alreadyVerified: true };
+    }
+
+    if (!user.email) {
+      throw new Error("No email on account (GitHub login). Email verification not needed.");
+    }
+
+    const { generateOtp, sendEmail, buildOtpEmailHtml, buildOtpEmailText } = await import("./email.server");
+    const otp = generateOtp();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await query(
+      "UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3",
+      [otp, otpExpires.toISOString(), context.userId]
+    );
+
+    const result = await sendEmail({
+      to: user.email,
+      subject: "Verify your GuardAI email",
+      text: buildOtpEmailText(otp),
+      html: buildOtpEmailHtml(otp),
+    });
+
+    if (!result.ok) throw new Error("Failed to send email. Please try again.");
+
+    return { ok: true };
   });
 
 // ============ Update Profile ============

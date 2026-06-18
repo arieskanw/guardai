@@ -12,10 +12,21 @@ export const Route = createFileRoute("/_authenticated")({
       const { getMe } = await import("@/lib/auth.functions");
       const user = await getMe({ headers: { Authorization: `Bearer ${token}` } });
       if (!user) throw new Error("No user");
+
+      // Redirect unverified email users to verify page
+      // Skip check for GitHub-only accounts (no email)
+      if (user.email && !user.email_verified) {
+        throw redirect({ to: "/verify-email" });
+      }
+
       return { user };
-    } catch {
-      localStorage.removeItem("guardai_auth_token");
-      throw redirect({ to: "/auth" });
+    } catch (err) {
+      // Only clear token for auth errors, not redirects
+      if (err instanceof Error && err.message === "No user") {
+        localStorage.removeItem("guardai_auth_token");
+        throw redirect({ to: "/auth" });
+      }
+      throw err;
     }
   },
   component: () => (

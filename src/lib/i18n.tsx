@@ -209,7 +209,20 @@ const dict = {
   "profile.payHistory": { id: "Riwayat Pembayaran", en: "Payment History" },
   "profile.noPayments": { id: "Belum ada pembayaran.", en: "No payments yet." },
 
-} satisfies Dict;
+  "verify.title": { id: "Verifikasi Email", en: "Verify your email" },
+  "verify.subtitle": { id: "Kode verifikasi telah dikirim ke", en: "A verification code has been sent to" },
+  "verify.enterCode": { id: "Masukkan kode 6 digit", en: "Enter the 6-digit code" },
+  "verify.verify": { id: "Verifikasi", en: "Verify" },
+  "verify.noCode": { id: "Tidak menerima kode?", en: "Didn't receive the code?" },
+  "verify.resend": { id: "Kirim ulang", en: "Resend code" },
+  "verify.resendSuccess": { id: "Kode baru telah dikirim ke email kamu!", en: "A new code has been sent to your email!" },
+  "verify.success": { id: "Email berhasil diverifikasi! 🎉", en: "Email verified successfully! 🎉" },
+  "verify.alreadyVerified": { id: "Email sudah diverifikasi sebelumnya.", en: "Email was already verified." },
+  "verify.verifiedTitle": { id: "Email Terverifikasi! 🎉", en: "Email Verified! 🎉" },
+  "verify.verifiedDesc": { id: "Akun kamu sudah aktif. Sekarang bisa pakai GuardAI.", en: "Your account is now active. You can start using GuardAI." },
+  "verify.goDashboard": { id: "Ke Dashboard", en: "Go to Dashboard" },
+
+ } satisfies Dict;
 
 export type TKey = keyof typeof dict;
 

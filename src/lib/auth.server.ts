@@ -14,6 +14,7 @@ export async function authenticateRequest(): Promise<{
     display_name: string | null;
     github_login: string | null;
     avatar_url: string | null;
+    email_verified_at: string | null;
   };
 }> {
   const { getRequest } = await import("@tanstack/react-start/server");
@@ -30,7 +31,8 @@ export async function authenticateRequest(): Promise<{
     display_name: string | null;
     github_login: string | null;
     avatar_url: string | null;
-  }>("SELECT id, email, display_name, github_login, avatar_url FROM users WHERE id = $1", [
+    email_verified_at: string | null;
+  }>("SELECT id, email, display_name, github_login, avatar_url, email_verified_at FROM users WHERE id = $1", [
     payload.sub,
   ]);
 

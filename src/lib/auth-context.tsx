@@ -6,6 +6,7 @@ export type User = {
   display_name: string | null;
   github_login: string | null;
   avatar_url: string | null;
+  email_verified?: boolean;
 };
 
 type AuthCtx = {
