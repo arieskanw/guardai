@@ -61,7 +61,7 @@ export function buildOtpEmailHtml(otp: string, title = "Verify your email"): str
         <table role="presentation" style="max-width:480px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
           <tr>
             <td style="padding:40px 32px 8px;text-align:center">
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:26px;font-weight:700;line-height:1">G</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:26px;font-weight:700;line-height:1">G</span>
             </td>
           </tr>
           <tr>
@@ -72,7 +72,7 @@ export function buildOtpEmailHtml(otp: string, title = "Verify your email"): str
           </tr>
           <tr>
             <td style="padding:28px 32px">
-              <div style="text-align:center;font-size:40px;font-weight:700;letter-spacing:10px;color:#6366f1;background:#f0f0ff;border-radius:12px;padding:24px 16px;font-family:'SF Mono','Menlo','Monaco','Courier New',monospace;border:1px solid rgba(99,102,241,0.15)">${otp}</div>
+              <div style="text-align:center;font-size:40px;font-weight:700;letter-spacing:10px;color:#3b82f6;background:#eff6ff;border-radius:12px;padding:24px 16px;font-family:'SF Mono','Menlo','Monaco','Courier New',monospace;border:1px solid rgba(59,130,246,0.15)">${otp}</div>
             </td>
           </tr>
           <tr>
