@@ -1,5 +1,5 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM = process.env.RESEND_FROM || "GuardAI <noreply@guardai.codezy.id>";
+const RESEND_FROM = process.env.RESEND_FROM || "GuardAI <noreply@codezy.id>";
 
 if (!RESEND_API_KEY) {
   console.warn("[email] RESEND_API_KEY not set — emails will not be sent");
