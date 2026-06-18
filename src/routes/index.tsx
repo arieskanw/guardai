@@ -202,8 +202,8 @@ function Pricing() {
     {
       name: t("plan.pro"),
       tag: t("plan.pro.tag"),
-      price: "$1",
-      idrPrice: "≈16,500",
+      price: "$19",
+      idrPrice: "≈Rp313.500",
       cta: t("plan.cta"),
       popular: true,
       features: ["Unlimited reviews", "Tests + Security scan", "Custom guidelines", "Priority queue"],
@@ -211,8 +211,8 @@ function Pricing() {
     {
       name: t("plan.team"),
       tag: t("plan.team.tag"),
-      price: "$3",
-      idrPrice: "≈49,500",
+      price: "$49",
+      idrPrice: "≈Rp808.500",
       cta: t("plan.cta"),
       popular: false,
       features: ["Everything in Pro", "Multi-user", "Team analytics", "Shared rules"],
@@ -248,12 +248,12 @@ function Pricing() {
               <p className="mt-4">
                 <span className="text-4xl font-bold">{p.price}</span>
                 <span className="ml-1 text-sm text-muted-foreground">
-                  /bln
+                  {t("plan.month")}
                 </span>
               </p>
               {p.idrPrice !== "0" && (
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {p.idrPrice} IDR (kurs real-time)
+                  {p.idrPrice}
                 </p>
               )}
               <ul className="mt-6 space-y-3 text-sm">

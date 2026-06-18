@@ -311,19 +311,19 @@ function StatCard({
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     completed: {
-      label: "Selesai",
+      label: "Completed",
       cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
     },
     running: {
-      label: "Berjalan",
+      label: "Running",
       cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     },
     failed: {
-      label: "Gagal",
+      label: "Failed",
       cls: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     },
     skipped: {
-      label: "Dilewati",
+      label: "Skipped",
       cls: "bg-muted text-muted-foreground",
     },
   };

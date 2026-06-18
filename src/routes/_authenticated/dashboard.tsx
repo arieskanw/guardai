@@ -182,14 +182,14 @@ function DashboardPage() {
                       onClick={(e) => { e.stopPropagation(); setCode(""); setFileName(null); }}
                       className="ml-1 text-xs text-muted-foreground underline hover:text-destructive"
                     >
-                      Hapus
+                      Remove
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-1">
                     <Upload className="h-6 w-6 text-muted-foreground" />
                     <p className="text-sm font-medium text-muted-foreground">
-                      Klik atau drag & drop file code
+                      Click or drag & drop a code file
                     </p>
                     <p className="text-xs text-muted-foreground/60">
                       .ts, .tsx, .js, .py, .php, .go, .rs, .java, .dart, .vue, .css...
@@ -204,13 +204,13 @@ function DashboardPage() {
                 className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
               >
                 <Link2 className="h-4 w-4" />
-                Hubungkan repo GitHub untuk review otomatis
+                Connect your GitHub repo for auto review
               </Link>
 
               {/* OR divider */}
               <div className="flex items-center gap-3">
                 <hr className="flex-1 border-border" />
-                <span className="text-xs text-muted-foreground">ATAU</span>
+                <span className="text-xs text-muted-foreground">OR</span>
                 <hr className="flex-1 border-border" />
               </div>
 

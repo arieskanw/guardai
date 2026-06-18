@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,12 +49,13 @@ function loadSnapScript(clientKey: string, isProduction: boolean): Promise<void>
     script.src = `${baseUrl}?data-key=${clientKey}`;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Gagal memuat Snap"));
+    script.onerror = () => reject(new Error("Failed to load Snap"));
     document.body.appendChild(script);
   });
 }
 
 function BillingPage() {
+  const { t } = useI18n();
   const { token } = useAuth();
   const qc = useQueryClient();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -100,23 +102,23 @@ function BillingPage() {
         await loadSnapScript(result.client_key, true);
         (window as any).snap.pay(result.snap_token, {
           onSuccess: () => {
-            toast.success("Pembayaran berhasil! Plan kamu sudah di-upgrade.");
+            toast.success("Payment successful! Your plan has been upgraded.");
             qc.invalidateQueries({ queryKey: ["my-subscription"] });
             qc.invalidateQueries({ queryKey: ["my-payments"] });
           },
           onPending: () => {
-            toast("Pembayaran sedang diproses...");
+            toast("Payment is being processed...");
             qc.invalidateQueries({ queryKey: ["pending-payment"] });
           },
           onError: () => {
-            toast.error("Pembayaran gagal. Silakan coba lagi.");
+            toast.error("Payment failed. Please try again.");
           },
           onClose: () => {
             qc.invalidateQueries({ queryKey: ["my-payments"] });
           },
         });
       } catch (err: any) {
-        toast.error(err.message || "Gagal memuat Midtrans Snap");
+        toast.error(err.message || "Failed to load Midtrans Snap");
       }
     },
     onError: (err: Error) => {
@@ -179,7 +181,7 @@ function BillingPage() {
             {pendingPayment && (
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
-                Pembayaran #{String((pendingPayment as any).order_id).slice(-8)} sedang diproses...
+                Payment #{String((pendingPayment as any).order_id).slice(-8)} is being processed...
               </div>
             )}
           </div>
@@ -224,11 +226,11 @@ function BillingPage() {
                     <p className="mt-2 text-3xl font-bold">
                       ${(plan.price_monthly_cents / 100).toFixed(0)}
                       <span className="ml-1 text-sm font-normal text-muted-foreground">
-                        /bln
+                        {t("plan.month")}
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      ≈ Rp{(plan.price_monthly_cents / 100 * 16500).toLocaleString("id-ID")} (kurs real-time)
+                      ≈ Rp{(plan.price_monthly_cents / 100 * 16500).toLocaleString("id-ID")} (real-time rate)
                     </p>
                   </div>
 
@@ -275,7 +277,7 @@ function BillingPage() {
         {/* Payment History */}
         {payments && (payments as Payment[]).length > 0 && (
           <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
-            <h3 className="mb-3 text-sm font-semibold">Riwayat Pembayaran</h3>
+            <h3 className="mb-3 text-sm font-semibold">Payment History</h3>
             <div className="space-y-2">
               {(payments as Payment[]).slice(0, 10).map((p: any) => (
                 <div
@@ -313,8 +315,8 @@ function BillingPage() {
         {(!payments || (payments as Payment[]).length === 0) && (
           <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)] text-sm text-muted-foreground">
             <p>
-              💳 Pembayaran diproses via <strong>Midtrans</strong> (QRIS / Virtual Account / e-Wallet / Kartu).
-              Setelah upgrade, limit review kamu akan langsung terbuka dan kamu bisa menikmati fitur premium.
+              💳 Payments processed via <strong>Midtrans</strong> (QRIS / Virtual Account / e-Wallet / Card).
+              After upgrading, your review limit will unlock immediately and you can enjoy premium features.
             </p>
           </div>
         )}

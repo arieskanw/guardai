@@ -17,12 +17,12 @@ export const Route = createFileRoute("/_authenticated/guidelines")({
   component: GuidelinesPage,
 });
 
-const PLACEHOLDER = `Contoh guidelines:
-- Gunakan constant instead of magic numbers
-- Semua fungsi harus punya error handling
-- Max 300 baris per file
-- Ikuti naming convention: camelCase untuk variable, PascalCase untuk class
-- Wajib ada unit test untuk setiap fungsi baru`;
+const PLACEHOLDER = `Example guidelines:
+- Use constants instead of magic numbers
+- All functions must have error handling
+- Max 300 lines per file
+- Follow naming convention: camelCase for variables, PascalCase for classes
+- Unit tests required for all new functions`;
 
 function GuidelinesPage() {
   const { token } = useAuth();
@@ -69,8 +69,8 @@ function GuidelinesPage() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Atur panduan kustom yang akan digunakan AI saat me-review code PR kamu.
-          Guidelines akan ditambahkan ke prompt review.
+          Set custom guidelines that the AI will use when reviewing your PR code.
+          Guidelines are appended to the review prompt.
         </p>
 
         {/* New / Edit Form */}
@@ -84,7 +84,7 @@ function GuidelinesPage() {
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-10 text-center shadow-[var(--shadow-soft)]">
               <BookOpen className="h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
-                Belum ada guidelines. Buat yang pertama!
+                No guidelines yet. Create the first one!
               </p>
             </div>
           )}
@@ -138,7 +138,7 @@ function GuidelinesPage() {
                             ? "text-emerald-600 hover:bg-emerald-50"
                             : "text-muted-foreground hover:bg-muted"
                         }`}
-                        title={g.is_active ? "Nonaktifkan" : "Aktifkan"}
+                        title={g.is_active ? "Disable" : "Enable"}
                       >
                         {g.is_active ? (
                           <Check className="h-4 w-4" />
@@ -205,7 +205,7 @@ function GuidelineForm({
     >
       <div>
         <label className="text-xs font-medium text-muted-foreground">
-          Nama
+          Name
         </label>
         <input
           value={name}
@@ -218,7 +218,7 @@ function GuidelineForm({
 
       <div>
         <label className="text-xs font-medium text-muted-foreground">
-          Repo (opsional — kosongkan untuk global)
+          Repo (optional — leave empty for global)
         </label>
         <input
           value={repo}

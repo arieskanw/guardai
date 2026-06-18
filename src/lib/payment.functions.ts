@@ -79,11 +79,11 @@ export const createSnapToken = createServerFn({ method: "POST" })
       clientKey,
     });
 
-    // Convert USD cents → IDR (real-time exchange rate)
+    // Convert USD → IDR (real-time exchange rate)
     const rate = await getUsdToIdrRate();
     const amountIdr = Math.round((data.amount / 100) * rate); // data.amount = USD cents
     if (amountIdr < 100) {
-      throw new Error("Jumlah pembayaran terlalu kecil setelah konversi.");
+      throw new Error("Jumlah pembayaran terlalu kecil.");
     }
 
     console.log(
