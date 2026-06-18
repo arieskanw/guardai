@@ -202,8 +202,8 @@ function Pricing() {
     {
       name: t("plan.pro"),
       tag: t("plan.pro.tag"),
-      price: "$19",
-      idrPrice: "19rb",
+      price: "$1",
+      idrPrice: "≈16,500",
       cta: t("plan.cta"),
       popular: true,
       features: ["Unlimited reviews", "Tests + Security scan", "Custom guidelines", "Priority queue"],
@@ -211,8 +211,8 @@ function Pricing() {
     {
       name: t("plan.team"),
       tag: t("plan.team.tag"),
-      price: "$49",
-      idrPrice: "49rb",
+      price: "$3",
+      idrPrice: "≈49,500",
       cta: t("plan.cta"),
       popular: false,
       features: ["Everything in Pro", "Multi-user", "Team analytics", "Shared rules"],
@@ -246,11 +246,16 @@ function Pricing() {
                 <span className="text-xs text-muted-foreground">{p.tag}</span>
               </div>
               <p className="mt-4">
-                <span className="text-4xl font-bold">{p.idrPrice === "0" ? "$0" : p.idrPrice}</span>
+                <span className="text-4xl font-bold">{p.price}</span>
                 <span className="ml-1 text-sm text-muted-foreground">
-                  {p.idrPrice === "0" ? "" : t("plan.month")}
+                  /bln
                 </span>
               </p>
+              {p.idrPrice !== "0" && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {p.idrPrice} IDR (kurs real-time)
+                </p>
+              )}
               <ul className="mt-6 space-y-3 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">

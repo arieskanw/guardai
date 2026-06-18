@@ -222,10 +222,13 @@ function BillingPage() {
                       </h3>
                     </div>
                     <p className="mt-2 text-3xl font-bold">
-                      Rp{plan.price_monthly_cents.toLocaleString("id-ID")}
+                      ${(plan.price_monthly_cents / 100).toFixed(0)}
                       <span className="ml-1 text-sm font-normal text-muted-foreground">
                         /bln
                       </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      ≈ Rp{(plan.price_monthly_cents / 100 * 16500).toLocaleString("id-ID")} (kurs real-time)
                     </p>
                   </div>
 
@@ -290,7 +293,7 @@ function BillingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">
-                      Rp{p.amount.toLocaleString("id-ID")}
+                      ${(p.amount / 100).toFixed(2)}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${

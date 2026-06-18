@@ -28,6 +28,31 @@ function getMidtransConfig() {
   };
 }
 
+// ============ Real-time USD → IDR Exchange Rate ============
+const RATE_CACHE: { rate: number; fetchedAt: number } = { rate: 16500, fetchedAt: 0 };
+const CACHE_TTL_MS = 30 * 60 * 1000; // cache 30 menit
+
+export async function getUsdToIdrRate(): Promise<number> {
+  const now = Date.now();
+  if (RATE_CACHE.fetchedAt > 0 && (now - RATE_CACHE.fetchedAt) < CACHE_TTL_MS) {
+    return RATE_CACHE.rate;
+  }
+
+  try {
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: any = await res.json();
+    const rate = data.rates?.IDR || 16500;
+    RATE_CACHE.rate = rate;
+    RATE_CACHE.fetchedAt = now;
+    console.log("[payment] USD rate:", rate);
+    return rate;
+  } catch (err) {
+    console.warn("[payment] rate fetch failed, using fallback:", err);
+    return RATE_CACHE.rate || 16500; // fallback ~Rp16.500
+  }
+}
+
 // ============ Create Snap Token ============
 const initPaymentSchema = z.object({
   planId: z.string().uuid(),
@@ -54,6 +79,17 @@ export const createSnapToken = createServerFn({ method: "POST" })
       clientKey,
     });
 
+    // Convert USD cents → IDR (real-time exchange rate)
+    const rate = await getUsdToIdrRate();
+    const amountIdr = Math.round((data.amount / 100) * rate); // data.amount = USD cents
+    if (amountIdr < 100) {
+      throw new Error("Jumlah pembayaran terlalu kecil setelah konversi.");
+    }
+
+    console.log(
+      `[payment] ${data.planName}: $${(data.amount / 100).toFixed(2)} → Rp${amountIdr.toLocaleString("id-ID")} (rate: ${rate})`
+    );
+
     // Generate order ID: GUARD-{timestamp}-{shortUserId}
     const ts = Date.now().toString(36).toUpperCase();
     const uid = context.userId.replace(/-/g, "").slice(0, 6).toUpperCase();
@@ -64,13 +100,13 @@ export const createSnapToken = createServerFn({ method: "POST" })
     const payload: Record<string, any> = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: data.amount,
+        gross_amount: amountIdr, // Dalam IDR untuk Midtrans
       },
       item_details: [
         {
           id: `plan-${data.planId}`,
           name: `GuardAI ${data.planName} — ${cycleLabel}`,
-          price: data.amount,
+          price: amountIdr,
           quantity: 1,
         },
       ],
