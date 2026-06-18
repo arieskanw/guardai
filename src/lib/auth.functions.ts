@@ -187,3 +187,70 @@ export const getMe = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     return context.user;
   });
+
+// ============ Update Profile ============
+
+const updateProfileSchema = z.object({
+  displayName: z.string().min(1).max(100).optional(),
+  avatarUrl: z.string().url().max(500).optional().nullable(),
+});
+
+export const updateProfile = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((d: unknown) => updateProfileSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (data.displayName !== undefined) {
+      updates.push(`display_name = $${idx++}`);
+      values.push(data.displayName);
+    }
+    if (data.avatarUrl !== undefined) {
+      updates.push(`avatar_url = $${idx++}`);
+      values.push(data.avatarUrl);
+    }
+
+    if (updates.length === 0) return { ok: true };
+
+    values.push(context.userId);
+    await query(
+      `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx}`,
+      values
+    );
+
+    return { ok: true };
+  });
+
+// ============ Change Password ============
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+});
+
+export const changePassword = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((d: unknown) => changePasswordSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const user = await queryOne<{ password_hash: string | null }>(
+      "SELECT password_hash FROM users WHERE id = $1",
+      [context.userId]
+    );
+    if (!user) throw new Error("User not found");
+
+    // If user has password, verify current one
+    if (user.password_hash) {
+      const valid = await bcrypt.compare(data.currentPassword, user.password_hash);
+      if (!valid) throw new Error("Current password is incorrect");
+    }
+
+    const newHash = await bcrypt.hash(data.newPassword, 12);
+    await query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+      newHash,
+      context.userId,
+    ]);
+
+    return { ok: true };
+  });

@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPrReviewsRouteImport } from './routes/_authenticated/pr-reviews'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
@@ -42,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPrReviewsRoute = AuthenticatedPrReviewsRouteImport.update({
   id: '/pr-reviews',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/pr-reviews': typeof AuthenticatedPrReviewsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/pr-reviews': typeof AuthenticatedPrReviewsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/pr-reviews': typeof AuthenticatedPrReviewsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/integrations'
     | '/pr-reviews'
+    | '/profile'
     | '/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/integrations'
     | '/pr-reviews'
+    | '/profile'
     | '/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/history'
     | '/_authenticated/integrations'
     | '/_authenticated/pr-reviews'
+    | '/_authenticated/profile'
     | '/_authenticated/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -230,6 +242,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pr-reviews': {
       id: '/_authenticated/pr-reviews'
@@ -322,6 +341,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedPrReviewsRoute: typeof AuthenticatedPrReviewsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -331,6 +351,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedPrReviewsRoute: AuthenticatedPrReviewsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

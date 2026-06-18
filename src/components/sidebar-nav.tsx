@@ -8,6 +8,7 @@ import {
   History,
   Github,
   CircleDollarSign,
+  User,
   LogOut,
 } from "lucide-react";
 
@@ -17,6 +18,7 @@ const SIDEBAR_ITEMS = [
   { path: "/guidelines", labelKey: "nav.guidelines", Icon: BookOpen },
   { path: "/history", labelKey: "nav.history", Icon: History },
   { path: "/integrations", labelKey: "nav.integrations", Icon: Github },
+  { path: "/profile", labelKey: "nav.profile", Icon: User },
   { path: "/billing", labelKey: "nav.billing", Icon: CircleDollarSign },
 ];
 

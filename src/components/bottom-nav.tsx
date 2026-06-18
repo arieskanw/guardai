@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
-import { Shield, GitPullRequest, BookOpen, MoreHorizontal, History, Github, CircleDollarSign, LogOut } from "lucide-react";
+import { Shield, GitPullRequest, BookOpen, MoreHorizontal, History, Github, CircleDollarSign, User, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const MAIN_NAV = [
@@ -13,6 +13,7 @@ const MAIN_NAV = [
 const MORE_ITEMS = [
   { path: "/history", labelKey: "nav.history", Icon: History },
   { path: "/integrations", labelKey: "nav.integrations", Icon: Github },
+  { path: "/profile", labelKey: "nav.profile", Icon: User },
   { path: "/billing", labelKey: "nav.billing", Icon: CircleDollarSign },
 ] as const;
 

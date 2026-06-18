@@ -109,6 +109,21 @@ export const canReview = createServerFn({ method: "GET" })
     return { allowed: true, used, limit };
   });
 
+export const listAllSubscriptions = createServerFn({ method: "GET" })
+  .middleware([requireAuth])
+  .handler(async ({ context }: any) => {
+    const { rows } = await query(
+      `SELECT s.*, p.name AS plan_name, p.price_monthly_cents, p.reviews_limit
+       FROM subscriptions s
+       JOIN plans p ON p.id = s.plan_id
+       WHERE s.user_id = $1
+       ORDER BY s.created_at DESC
+       LIMIT 20`,
+      [context.userId]
+    );
+    return rows;
+  });
+
 export const incrementReviewsUsed = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .handler(async ({ context }: any) => {
