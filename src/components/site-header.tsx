@@ -15,7 +15,7 @@ export function SiteHeader() {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elegant)]">
             <Shield className="h-5 w-5" />
           </span>
-          <span className="truncate text-base font-semibold tracking-tight">AI Code Guardian</span>
+          <span className="truncate text-base font-semibold tracking-tight">GuardAI</span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">

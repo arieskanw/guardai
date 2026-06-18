@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateText } from "ai";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./auth.functions";
+import { checkRateLimit } from "./rate-limit";
+import { query, queryOne } from "./db";
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
@@ -15,7 +17,7 @@ export type ReviewFinding = {
 
 export type ReviewResult = {
   summary: string;
-  qualityScore: number; // 0..100
+  qualityScore: number;
   findings: ReviewFinding[];
   tests: string;
   security: ReviewFinding[];
@@ -37,36 +39,48 @@ function extractJson(text: string): unknown {
   return JSON.parse(raw.slice(first, last + 1));
 }
 
+// ============ Review Code (AI-driven) ============
+
 export const reviewCode = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => inputSchema.parse(d))
-  .handler(async ({ data }): Promise<ReviewResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+  .validator((d: unknown) => inputSchema.parse(d))
+  .middleware([requireAuth])
+  .handler(async ({ data, context }): Promise<ReviewResult> => {
+    const apiKey = process.env.LOVABLE_API_KEY || process.env.AI_API_KEY;
     if (!apiKey) throw new Error("AI service is not configured.");
 
-    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
-    const gateway = createLovableAiGatewayProvider(apiKey);
-    const model = gateway("google/gemini-3-flash-preview");
+    // Rate limiting
+    const rateCheck = checkRateLimit(context.userId, "reviewCode");
+    if (!rateCheck.allowed) {
+      const retryAfter = Math.ceil((rateCheck.resetAt - Date.now()) / 1000);
+      throw new Error(
+        `Rate limit exceeded. Coba lagi dalam ${retryAfter} detik. (${rateCheck.remaining} tersisa)`
+      );
+    }
 
-    const system = `You are AI Code Guardian, a senior software engineer reviewing AI-generated code.
+    const { createAiProvider } = await import("./ai-gateway.server");
+    const gateway = createAiProvider(apiKey);
+    const model = gateway("deepseek-chat");
+
+    const system = `You are GuardAI, a senior software engineer reviewing AI-generated code.
 You return ONLY valid JSON matching this TypeScript shape (no markdown, no commentary):
 {
-  "summary": string,                 // 2-3 concise sentences
-  "qualityScore": number,            // integer 0-100
+  "summary": string,
+  "qualityScore": number,
   "findings": Array<{
-    "line": number | null,
-    "severity": "critical"|"high"|"medium"|"low"|"info",
-    "title": string,
-    "description": string,
-    "suggestion": string              // actionable, short code snippet allowed
-  }>,
-  "security": Array<{                 // OWASP-style security findings only
     "line": number | null,
     "severity": "critical"|"high"|"medium"|"low"|"info",
     "title": string,
     "description": string,
     "suggestion": string
   }>,
-  "tests": string                     // generated unit/integration tests as a code block in the same language
+  "security": Array<{
+    "line": number | null,
+    "severity": "critical"|"high"|"medium"|"low"|"info",
+    "title": string,
+    "description": string,
+    "suggestion": string
+  }>,
+  "tests": string
 }
 Rules:
 - Be concise and high-signal. Skip nitpicks unless severity warrants it.
@@ -112,7 +126,7 @@ ${data.code}
     return result;
   });
 
-// ============ Review history (DB-backed) ============
+// ============ Review history (PostgreSQL) ============
 
 const saveSchema = z.object({
   title: z.string().min(1).max(200),
@@ -129,60 +143,62 @@ const saveSchema = z.object({
 });
 
 export const saveReview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => saveSchema.parse(d))
+  .middleware([requireAuth])
+  .validator((d: unknown) => saveSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: row, error } = await supabase
-      .from("reviews")
-      .insert({
-        user_id: userId,
-        title: data.title,
-        language: data.language,
-        framework: data.framework || null,
-        code: data.code,
-        quality_score: Math.round(data.result.qualityScore),
-        findings_count: data.result.findings.length,
-        security_issues_count: data.result.security.length,
-        result: data.result,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    return { id: row.id as string };
+    const row = await queryOne<{ id: string }>(
+      `INSERT INTO reviews (user_id, title, language, framework, code, quality_score, findings_count, security_issues_count, result)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [
+        context.userId,
+        data.title,
+        data.language,
+        data.framework || null,
+        data.code,
+        Math.round(data.result.qualityScore),
+        data.result.findings.length,
+        data.result.security.length,
+        JSON.stringify(data.result),
+      ]
+    );
+    return { id: row!.id };
   });
 
 export const listReviews = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("reviews")
-      .select("id,title,language,framework,quality_score,findings_count,security_issues_count,created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) throw new Error(error.message);
-    return data ?? [];
+    const { rows } = await query(
+      `SELECT id, title, language, framework, quality_score, findings_count, security_issues_count, created_at
+       FROM reviews
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [context.userId]
+    );
+    return rows;
   });
 
 export const getReview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .middleware([requireAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
-      .from("reviews")
-      .select("*")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+    const row = await queryOne(
+      `SELECT * FROM reviews WHERE id = $1 AND user_id = $2`,
+      [data.id, context.userId]
+    );
     if (!row) throw new Error("Not found");
     return row;
   });
 
 export const deleteReview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .middleware([requireAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("reviews").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    const { rowCount } = await query(
+      `DELETE FROM reviews WHERE id = $1 AND user_id = $2`,
+      [data.id, context.userId]
+    );
+    if (rowCount === 0) throw new Error("Not found or unauthorized");
     return { ok: true };
   });

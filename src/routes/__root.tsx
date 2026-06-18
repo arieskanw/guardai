@@ -7,13 +7,12 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "../lib/i18n";
 import { AuthProvider } from "../lib/auth-context";
-import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -81,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AI Code Guardian — Review AI-generated code like a senior dev" },
+      { title: "GuardAI — Review AI-generated code like a senior dev" },
       {
         name: "description",
         content:
-          "AI Code Guardian reviews AI-generated code with framework-specific rules, auto-generated tests, and an OWASP security scan.",
+          "GuardAI reviews AI-generated code with framework-specific rules, auto-generated tests, and an OWASP security scan.",
       },
-      { name: "author", content: "AI Code Guardian" },
-      { property: "og:title", content: "AI Code Guardian" },
+      { name: "author", content: "GuardAI" },
+      { property: "og:title", content: "GuardAI" },
       {
         property: "og:description",
         content:
@@ -121,16 +120,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
-
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { reviewCode, saveReview, type ReviewFinding, type ReviewResult, type Severity } from "@/lib/review.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -24,19 +24,21 @@ import {
   Loader2,
   Shield,
   Play,
-  LogOut,
   Copy,
   Check,
   AlertTriangle,
   Sparkles,
   History,
   Github,
+  Upload,
+  FileCode,
+  Link2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — AI Code Guardian" },
+      { title: "Dashboard — GuardAI" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -62,8 +64,7 @@ const LANGUAGES = [
 
 function DashboardPage() {
   const { t, lang } = useI18n();
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user, token } = useAuth();
   const runReview = useServerFn(reviewCode);
   const persist = useServerFn(saveReview);
 
@@ -71,10 +72,12 @@ function DashboardPage() {
   const [language, setLanguage] = useState("typescript");
   const [framework, setFramework] = useState("");
   const [guidelines, setGuidelines] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const mutation = useMutation({
     mutationFn: (vars: { code: string; language: string; framework: string; guidelines: string }) =>
-      runReview({ data: vars }),
+      runReview({ data: vars, method: "POST", headers: { Authorization: `Bearer ${token}` } }),
     onSuccess: async (result, vars) => {
       try {
         const title = vars.code.split("\n")[0]?.slice(0, 80) || "Untitled review";
@@ -97,51 +100,46 @@ function DashboardPage() {
     },
   });
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (mutation.isPending || code.trim().length < 10) return;
     mutation.mutate({ code, language, framework, guidelines });
   }
 
+  function handleFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      setCode(text);
+      setFileName(file.name);
+      // Auto-detect language from extension
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const langMap: Record<string, string> = {
+        ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx",
+        py: "python", php: "php", go: "go", rs: "rust", java: "java",
+        kt: "kotlin", swift: "swift", dart: "dart", rb: "ruby", cs: "csharp",
+      };
+      if (ext && langMap[ext]) setLanguage(langMap[ext]);
+    };
+    reader.readAsText(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
   const result = mutation.data;
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <header className="border-b border-border bg-background">
-        <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
-          <Link to="/" className="flex min-w-0 items-center gap-2">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground">
-              <Shield className="h-5 w-5" />
-            </span>
-            <span className="truncate text-base font-semibold">AI Code Guardian</span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">{user?.email}</span>
-            <Button asChild size="sm" variant="ghost">
-              <Link to="/history">
-                <History className="mr-1.5 h-4 w-4" />
-                {t("dash.history")}
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="ghost">
-              <Link to="/integrations">
-                <Github className="mr-1.5 h-4 w-4" />
-                {t("nav.integrations")}
-              </Link>
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleSignOut}>
-              <LogOut className="mr-1.5 h-4 w-4" />
-              {t("nav.signout")}
-            </Button>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:py-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("dash.title")}</h1>
@@ -153,16 +151,80 @@ function DashboardPage() {
             onSubmit={handleSubmit}
             className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="code">{t("dash.code")}</Label>
-              <Textarea
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder={t("dash.codePlaceholder")}
-                className="min-h-[280px] font-mono text-xs"
-                required
-              />
+            <div className="space-y-3">
+              {/* Upload zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById("file-upload")?.click()}
+                className={`relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+                  dragOver
+                    ? "border-primary bg-primary/5"
+                    : fileName
+                      ? "border-emerald-300 bg-emerald-50/50"
+                      : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                }`}
+              >
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept=".ts,.tsx,.js,.jsx,.py,.php,.go,.rs,.java,.kt,.swift,.dart,.rb,.cs,.txt,.vue,.css,.scss"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                {fileName ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <FileCode className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm font-medium text-emerald-700">{fileName}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setCode(""); setFileName(null); }}
+                      className="ml-1 text-xs text-muted-foreground underline hover:text-destructive"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-1">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Klik atau drag & drop file code
+                    </p>
+                    <p className="text-xs text-muted-foreground/60">
+                      .ts, .tsx, .js, .py, .php, .go, .rs, .java, .dart, .vue, .css...
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Connect repo button */}
+              <Link
+                to="/integrations"
+                className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+              >
+                <Link2 className="h-4 w-4" />
+                Hubungkan repo GitHub untuk review otomatis
+              </Link>
+
+              {/* OR divider */}
+              <div className="flex items-center gap-3">
+                <hr className="flex-1 border-border" />
+                <span className="text-xs text-muted-foreground">ATAU</span>
+                <hr className="flex-1 border-border" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="code">{t("dash.code")}</Label>
+                <Textarea
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder={t("dash.codePlaceholder")}
+                  className="min-h-[200px] font-mono text-xs"
+                  required
+                />
+              </div>
             </div>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">

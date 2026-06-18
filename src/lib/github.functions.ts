@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./auth.functions";
+import { query, queryOne } from "./db";
 
 function normalizeGithubAppSlug(value: string | undefined) {
   const raw = value?.trim();
@@ -29,43 +30,38 @@ export const getGithubConfig = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const linkInstallation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ installation_id: z.number().int().positive() }).parse(d))
+  .middleware([requireAuth])
+  .validator((d: unknown) => z.object({ installation_id: z.number().int().positive() }).parse(d))
   .handler(async ({ data, context }) => {
     const { getInstallation, listInstallationRepos } = await import("./github.server");
     const inst = await getInstallation(data.installation_id);
     const repos = await listInstallationRepos(data.installation_id);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("github_installations")
-      .upsert(
-        {
-          user_id: context.userId,
-          installation_id: data.installation_id,
-          account_login: inst.account.login,
-          account_type: inst.account.type,
-          account_id: inst.account.id,
-          repositories: repos,
-        },
-        { onConflict: "installation_id" },
-      );
-    if (error) throw new Error(error.message);
+    await query(
+      `INSERT INTO github_installations (user_id, installation_id, account_login, account_type, account_id, repositories)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (installation_id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         account_login = EXCLUDED.account_login,
+         account_type = EXCLUDED.account_type,
+         account_id = EXCLUDED.account_id,
+         repositories = EXCLUDED.repositories`,
+      [context.userId, data.installation_id, inst.account.login, inst.account.type, inst.account.id, JSON.stringify(repos)]
+    );
+
     return { ok: true, account: inst.account.login, repos: repos.length };
   });
 
 export const syncExistingInstallation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     const { listAppInstallations, listInstallationRepos } = await import("./github.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: linked, error: linkedError } = await supabaseAdmin
-      .from("github_installations")
-      .select("installation_id");
-    if (linkedError) throw new Error(linkedError.message);
+    const { rows: linked } = await query<{ installation_id: number }>(
+      "SELECT installation_id FROM github_installations"
+    );
 
-    const linkedIds = new Set((linked ?? []).map((i) => Number(i.installation_id)));
+    const linkedIds = new Set(linked.map((i) => Number(i.installation_id)));
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const candidates = (await listAppInstallations())
       .filter((i) => !linkedIds.has(i.id))
@@ -81,60 +77,92 @@ export const syncExistingInstallation = createServerFn({ method: "POST" })
 
     const inst = candidates[0];
     const repos = await listInstallationRepos(inst.id);
-    const { error } = await supabaseAdmin
-      .from("github_installations")
-      .upsert(
-        {
-          user_id: context.userId,
-          installation_id: inst.id,
-          account_login: inst.account.login,
-          account_type: inst.account.type,
-          account_id: inst.account.id,
-          repositories: repos,
-        },
-        { onConflict: "installation_id" },
-      );
-    if (error) throw new Error(error.message);
+    await query(
+      `INSERT INTO github_installations (user_id, installation_id, account_login, account_type, account_id, repositories)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (installation_id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         account_login = EXCLUDED.account_login,
+         account_type = EXCLUDED.account_type,
+         account_id = EXCLUDED.account_id,
+         repositories = EXCLUDED.repositories`,
+      [context.userId, inst.id, inst.account.login, inst.account.type, inst.account.id, JSON.stringify(repos)]
+    );
+
     return { ok: true, account: inst.account.login, repos: repos.length };
   });
 
 export const listInstallations = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("github_installations")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return data ?? [];
+    const { rows } = await query(
+      "SELECT * FROM github_installations WHERE user_id = $1 ORDER BY created_at DESC",
+      [context.userId]
+    );
+    return rows;
   });
 
 export const unlinkInstallation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ installation_id: z.number().int().positive() }).parse(d))
+  .middleware([requireAuth])
+  .validator((d: unknown) => z.object({ installation_id: z.number().int().positive() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("github_installations")
-      .delete()
-      .eq("installation_id", data.installation_id);
-    if (error) throw new Error(error.message);
+    const { rowCount } = await query(
+      "DELETE FROM github_installations WHERE installation_id = $1 AND user_id = $2",
+      [data.installation_id, context.userId]
+    );
+    if (rowCount === 0) throw new Error("Not found or unauthorized");
     return { ok: true };
   });
 
 export const listPrReviews = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const { data: insts } = await context.supabase
-      .from("github_installations")
-      .select("installation_id");
-    const ids = (insts ?? []).map((i) => i.installation_id as number);
+    const { rows: insts } = await query<{ installation_id: number }>(
+      "SELECT installation_id FROM github_installations WHERE user_id = $1",
+      [context.userId]
+    );
+    const ids = insts.map((i) => i.installation_id);
     if (ids.length === 0) return [];
-    const { data, error } = await context.supabase
-      .from("pr_reviews")
-      .select("id,repo_full_name,pr_number,pr_title,pr_url,quality_score,findings_count,security_issues_count,status,created_at")
-      .in("installation_id", ids)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) throw new Error(error.message);
-    return data ?? [];
+
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(",");
+    const { rows } = await query(
+      `SELECT id, repo_full_name, pr_number, pr_title, pr_url, quality_score, findings_count, security_issues_count, status, created_at
+       FROM pr_reviews
+       WHERE installation_id IN (${placeholders})
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      ids
+    );
+    return rows;
+  });
+
+export const getPrReviewStats = createServerFn({ method: "GET" })
+  .middleware([requireAuth])
+  .handler(async ({ context }) => {
+    const { rows: insts } = await query<{ installation_id: number }>(
+      "SELECT installation_id FROM github_installations WHERE user_id = $1",
+      [context.userId]
+    );
+    const ids = insts.map((i) => i.installation_id);
+    if (ids.length === 0)
+      return { total: 0, avgScore: 0, totalFindings: 0, totalSecurity: 0 };
+
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(",");
+    const { rows } = await query(
+      `SELECT
+        COUNT(*)::int AS total,
+        COALESCE(ROUND(AVG(quality_score)::numeric), 0)::int AS avg_score,
+        COALESCE(SUM(findings_count), 0)::int AS total_findings,
+        COALESCE(SUM(security_issues_count), 0)::int AS total_security
+       FROM pr_reviews
+       WHERE installation_id IN (${placeholders})
+         AND status = 'completed'`,
+      ids
+    );
+    return {
+      total: rows[0]?.total ?? 0,
+      avgScore: rows[0]?.avg_score ?? 0,
+      totalFindings: rows[0]?.total_findings ?? 0,
+      totalSecurity: rows[0]?.total_security ?? 0,
+    };
   });

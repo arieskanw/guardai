@@ -51,13 +51,14 @@ export const Route = createFileRoute("/api/public/github/webhook")({
 });
 
 async function handleInstallationEvent(payload: any) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const action = payload.action as string;
   const installationId = payload.installation?.id as number | undefined;
   if (!installationId) return;
 
+  const { query } = await import("@/lib/db");
+
   if (action === "deleted") {
-    await supabaseAdmin.from("github_installations").delete().eq("installation_id", installationId);
+    await query("DELETE FROM github_installations WHERE installation_id = $1", [installationId]);
     return;
   }
 
@@ -65,16 +66,16 @@ async function handleInstallationEvent(payload: any) {
   const { listInstallationRepos } = await import("@/lib/github.server");
   try {
     const repos = await listInstallationRepos(installationId);
-    await supabaseAdmin
-      .from("github_installations")
-      .update({ repositories: repos })
-      .eq("installation_id", installationId);
+    await query(
+      `UPDATE github_installations SET repositories = $1 WHERE installation_id = $2`,
+      [JSON.stringify(repos), installationId]
+    );
   } catch (e) {
     console.warn("[gh-webhook] could not refresh repos", e);
   }
 }
 
-const REVIEWABLE_EXT = /\.(ts|tsx|js|jsx|py|go|rb|php|java|kt|swift|rs|cs|vue|svelte|sql)$/i;
+const REVIEWABLE_EXT = /\.(ts|tsx|js|jsx|py|go|rb|php|java|kt|swift|rs|cs|vue|svelte|sql|dart)$/i;
 const MAX_FILES = 10;
 const MAX_BYTES_PER_FILE = 20_000;
 const MAX_TOTAL_BYTES = 80_000;
@@ -85,31 +86,24 @@ async function handlePullRequest(payload: any, ghFetch: (i: number, p: string, i
   const pr = payload.pull_request;
   if (!installationId || !repo || !pr) return;
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { query, queryOne } = await import("@/lib/db");
 
   // Insert pending record
-  const { data: pending, error: insErr } = await supabaseAdmin
-    .from("pr_reviews")
-    .insert({
-      installation_id: installationId,
-      repo_full_name: repo,
-      pr_number: pr.number,
-      pr_title: pr.title || `PR #${pr.number}`,
-      pr_url: pr.html_url,
-      commit_sha: pr.head?.sha || "",
-      status: "running",
-    })
-    .select("id")
-    .single();
-  if (insErr) {
-    console.error("[gh-webhook] insert pending failed", insErr);
+  const pending = await queryOne<{ id: string }>(
+    `INSERT INTO pr_reviews (installation_id, repo_full_name, pr_number, pr_title, pr_url, commit_sha, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'running')
+     RETURNING id`,
+    [installationId, repo, pr.number, pr.title || `PR #${pr.number}`, pr.html_url, pr.head?.sha || ""]
+  );
+  if (!pending) {
+    console.error("[gh-webhook] insert pending failed");
     return;
   }
 
   // Fetch changed files
   const filesRes = await ghFetch(installationId, `/repos/${repo}/pulls/${pr.number}/files?per_page=100`);
   if (!filesRes.ok) {
-    await supabaseAdmin.from("pr_reviews").update({ status: "failed" }).eq("id", pending.id);
+    await query("UPDATE pr_reviews SET status = 'failed' WHERE id = $1", [pending.id]);
     return;
   }
   const files = (await filesRes.json()) as Array<{
@@ -125,10 +119,10 @@ async function handlePullRequest(payload: any, ghFetch: (i: number, p: string, i
     .slice(0, MAX_FILES);
 
   if (relevant.length === 0) {
-    await supabaseAdmin
-      .from("pr_reviews")
-      .update({ status: "skipped", result: { reason: "No reviewable code changes" } })
-      .eq("id", pending.id);
+    await query(
+      `UPDATE pr_reviews SET status = 'skipped', result = $1 WHERE id = $2`,
+      [JSON.stringify({ reason: "No reviewable code changes" }), pending.id]
+    );
     return;
   }
 
@@ -144,7 +138,8 @@ async function handlePullRequest(payload: any, ghFetch: (i: number, p: string, i
   const language = detectLanguage(relevant[0].filename);
 
   // Run AI review
-  const result = await runAiReviewOnDiff(combined, language);
+  const guidelinesText = await getGuidelinesForReview(installationId, repo);
+  const result = await runAiReviewOnDiff(combined, language, guidelinesText);
 
   // Post comment to PR
   const commentBody = buildPrComment(result, relevant.map((f) => f.filename));
@@ -164,17 +159,12 @@ async function handlePullRequest(payload: any, ghFetch: (i: number, p: string, i
     console.warn("[gh-webhook] comment error", e);
   }
 
-  await supabaseAdmin
-    .from("pr_reviews")
-    .update({
-      status: "completed",
-      quality_score: result.qualityScore,
-      findings_count: result.findings.length,
-      security_issues_count: result.security.length,
-      result,
-      comment_id: commentId,
-    })
-    .eq("id", pending.id);
+  await query(
+    `UPDATE pr_reviews
+     SET status = 'completed', quality_score = $1, findings_count = $2, security_issues_count = $3, result = $4, comment_id = $5
+     WHERE id = $6`,
+    [result.qualityScore, result.findings.length, result.security.length, JSON.stringify(result), commentId, pending.id]
+  );
 }
 
 function detectLanguage(filename: string): string {
@@ -196,15 +186,35 @@ type AiReview = {
   tests: string;
 };
 
-async function runAiReviewOnDiff(diffText: string, language: string): Promise<AiReview> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI not configured");
-  const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
-  const { generateText } = await import("ai");
-  const gateway = createLovableAiGatewayProvider(apiKey);
-  const model = gateway("google/gemini-3-flash-preview");
+async function getGuidelinesForReview(
+  installationId: number,
+  repoFullName: string
+): Promise<string[]> {
+  const { query } = await import("@/lib/db");
+  const { rows: users } = await query<{ user_id: string }>(
+    "SELECT user_id FROM github_installations WHERE installation_id = $1 LIMIT 1",
+    [installationId]
+  );
+  if (users.length === 0) return [];
 
-  const system = `You are AI Code Guardian reviewing a Pull Request diff.
+  const { getGuidelinesForRepo } = await import("@/lib/guidelines.functions");
+  return getGuidelinesForRepo(users[0].user_id, repoFullName);
+}
+
+async function runAiReviewOnDiff(diffText: string, language: string, guidelinesText: string[] = []): Promise<AiReview> {
+  const apiKey = process.env.LOVABLE_API_KEY || process.env.AI_API_KEY;
+  if (!apiKey) throw new Error("AI not configured");
+  const { createAiProvider } = await import("@/lib/ai-gateway.server");
+  const { generateText } = await import("ai");
+  const gateway = createAiProvider(apiKey);
+  const model = gateway("deepseek-chat");
+
+  const system = `You are GuardAI reviewing a Pull Request diff.
+${
+  guidelinesText.length > 0
+    ? `\nThe project owner has set the following custom review guidelines. Follow them strictly:\n${guidelinesText.map((g, i) => `${i + 1}. ${g}`).join("\n")}\n`
+    : ""
+}
 Return ONLY valid JSON: { "summary": string, "qualityScore": number (0-100),
 "findings": Array<{line:number|null,severity:"critical"|"high"|"medium"|"low"|"info",title:string,description:string,suggestion:string}>,
 "security": Array<same shape, OWASP-focused>, "tests": string }.
@@ -244,7 +254,7 @@ function buildPrComment(r: AiReview, filenames: string[]): string {
     ? r.security.map((f) => `- ${sev(f.severity)} **${f.title}** — ${f.description}`).join("\n")
     : "_No security issues found._";
 
-  return `## 🛡️ AI Code Guardian Review
+  return `## 🛡️ GuardAI Review
 
 **Quality Score: \`${r.qualityScore}/100\`**
 
@@ -259,5 +269,5 @@ ${findingsMd}
 ${securityMd}
 
 ---
-<sub>Automated by AI Code Guardian · powered by Gemini</sub>`;
+<sub>Automated by GuardAI · powered by DeepSeek</sub>`;
 }

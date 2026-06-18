@@ -13,11 +13,16 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedPrReviewsRouteImport } from './routes/_authenticated/pr-reviews'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedGuidelinesRouteImport } from './routes/_authenticated/guidelines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as ApiMidtransCallbackRouteImport } from './routes/api/midtrans/callback'
 import { Route as AuthenticatedHistoryIdRouteImport } from './routes/_authenticated/history.$id'
 import { Route as ApiPublicGithubWebhookRouteImport } from './routes/api/public/github.webhook'
+import { Route as ApiAuthGithubCallbackRouteImport } from './routes/api/auth/github/callback'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -38,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPrReviewsRoute = AuthenticatedPrReviewsRouteImport.update({
+  id: '/pr-reviews',
+  path: '/pr-reviews',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedIntegrationsRoute =
   AuthenticatedIntegrationsRouteImport.update({
     id: '/integrations',
@@ -49,10 +59,25 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGuidelinesRoute = AuthenticatedGuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiMidtransCallbackRoute = ApiMidtransCallbackRouteImport.update({
+  id: '/api/midtrans/callback',
+  path: '/api/midtrans/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedHistoryIdRoute = AuthenticatedHistoryIdRouteImport.update({
   id: '/$id',
@@ -64,25 +89,40 @@ const ApiPublicGithubWebhookRoute = ApiPublicGithubWebhookRouteImport.update({
   path: '/api/public/github/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthGithubCallbackRoute = ApiAuthGithubCallbackRouteImport.update({
+  id: '/api/auth/github/callback',
+  path: '/api/auth/github/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guidelines': typeof AuthenticatedGuidelinesRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
+  '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
+  '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guidelines': typeof AuthenticatedGuidelinesRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
+  '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
+  '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
 export interface FileRoutesById {
@@ -91,10 +131,15 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/guidelines': typeof AuthenticatedGuidelinesRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
+  '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
+  '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
   '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
 }
 export interface FileRouteTypes {
@@ -103,20 +148,30 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/billing'
     | '/dashboard'
+    | '/guidelines'
     | '/history'
     | '/integrations'
+    | '/pr-reviews'
     | '/history/$id'
+    | '/api/midtrans/callback'
+    | '/api/auth/github/callback'
     | '/api/public/github/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/billing'
     | '/dashboard'
+    | '/guidelines'
     | '/history'
     | '/integrations'
+    | '/pr-reviews'
     | '/history/$id'
+    | '/api/midtrans/callback'
+    | '/api/auth/github/callback'
     | '/api/public/github/webhook'
   id:
     | '__root__'
@@ -124,10 +179,15 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/sitemap.xml'
+    | '/_authenticated/billing'
     | '/_authenticated/dashboard'
+    | '/_authenticated/guidelines'
     | '/_authenticated/history'
     | '/_authenticated/integrations'
+    | '/_authenticated/pr-reviews'
     | '/_authenticated/history/$id'
+    | '/api/midtrans/callback'
+    | '/api/auth/github/callback'
     | '/api/public/github/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -136,6 +196,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiMidtransCallbackRoute: typeof ApiMidtransCallbackRoute
+  ApiAuthGithubCallbackRoute: typeof ApiAuthGithubCallbackRoute
   ApiPublicGithubWebhookRoute: typeof ApiPublicGithubWebhookRoute
 }
 
@@ -169,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/pr-reviews': {
+      id: '/_authenticated/pr-reviews'
+      path: '/pr-reviews'
+      fullPath: '/pr-reviews'
+      preLoaderRoute: typeof AuthenticatedPrReviewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/integrations': {
       id: '/_authenticated/integrations'
       path: '/integrations'
@@ -183,12 +252,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/guidelines': {
+      id: '/_authenticated/guidelines'
+      path: '/guidelines'
+      fullPath: '/guidelines'
+      preLoaderRoute: typeof AuthenticatedGuidelinesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/midtrans/callback': {
+      id: '/api/midtrans/callback'
+      path: '/api/midtrans/callback'
+      fullPath: '/api/midtrans/callback'
+      preLoaderRoute: typeof ApiMidtransCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/history/$id': {
       id: '/_authenticated/history/$id'
@@ -202,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/github/webhook'
       fullPath: '/api/public/github/webhook'
       preLoaderRoute: typeof ApiPublicGithubWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/github/callback': {
+      id: '/api/auth/github/callback'
+      path: '/api/auth/github/callback'
+      fullPath: '/api/auth/github/callback'
+      preLoaderRoute: typeof ApiAuthGithubCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -219,15 +316,21 @@ const AuthenticatedHistoryRouteWithChildren =
   AuthenticatedHistoryRoute._addFileChildren(AuthenticatedHistoryRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGuidelinesRoute: typeof AuthenticatedGuidelinesRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedPrReviewsRoute: typeof AuthenticatedPrReviewsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGuidelinesRoute: AuthenticatedGuidelinesRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedPrReviewsRoute: AuthenticatedPrReviewsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -238,8 +341,20 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiMidtransCallbackRoute: ApiMidtransCallbackRoute,
+  ApiAuthGithubCallbackRoute: ApiAuthGithubCallbackRoute,
   ApiPublicGithubWebhookRoute: ApiPublicGithubWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

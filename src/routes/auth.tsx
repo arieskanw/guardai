@@ -2,8 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -20,8 +18,8 @@ export const Route = createFileRoute("/auth")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Sign in — AI Code Guardian" },
-      { name: "description", content: "Sign in or create your AI Code Guardian account." },
+      { title: "Sign in — GuardAI" },
+      { name: "description", content: "Sign in or create your GuardAI account." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -30,7 +28,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const { t } = useI18n();
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
@@ -50,17 +48,16 @@ function AuthPage() {
     if (submitting) return;
     setSubmitting(true);
     try {
+      const { register, login } = await import("@/lib/auth.functions");
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+        const result = await register({
+          data: { email, password, displayName: email.split("@")[0] },
         });
-        if (error) throw error;
-        toast.success("Account created. Redirecting…");
+        signIn(result.token);
+        toast.success("Account created. Welcome!");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const result = await login({ data: { email, password } });
+        signIn(result.token);
         toast.success("Welcome back.");
       }
     } catch (err) {
@@ -71,17 +68,17 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
+  async function handleGithub() {
     if (oauthLoading) return;
     setOauthLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/dashboard",
-      });
-      if (result.error) throw result.error;
-      // If redirected, browser will navigate away; if tokens returned, session is set.
+      const { getGithubOauthUrl } = await import("@/lib/auth.functions");
+      const { url } = await getGithubOauthUrl();
+      // Store current path to redirect back after OAuth
+      localStorage.setItem("oauth_redirect", window.location.pathname);
+      window.location.href = url;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Google sign-in failed.";
+      const msg = err instanceof Error ? err.message : "GitHub sign-in failed.";
       toast.error(msg);
       setOauthLoading(false);
     }
@@ -102,7 +99,7 @@ function AuthPage() {
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground">
               <Shield className="h-5 w-5" />
             </span>
-            <span className="text-base font-semibold">AI Code Guardian</span>
+            <span className="text-base font-semibold">GuardAI</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{t("auth.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.subtitle")}</p>
@@ -111,15 +108,15 @@ function AuthPage() {
             type="button"
             variant="outline"
             className="mt-6 w-full"
-            onClick={handleGoogle}
+            onClick={handleGithub}
             disabled={oauthLoading}
           >
             {oauthLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <GoogleIcon className="mr-2 h-4 w-4" />
+              <GithubIcon className="mr-2 h-4 w-4" />
             )}
-            {t("auth.google")}
+            {t("auth.github")}
           </Button>
 
           <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
@@ -171,13 +168,10 @@ function AuthPage() {
   );
 }
 
-function GoogleIcon({ className }: { className?: string }) {
+function GithubIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 3.6 14.6 2.7 12 2.7 6.9 2.7 2.8 6.8 2.8 12s4.1 9.3 9.2 9.3c5.3 0 8.8-3.7 8.8-9 0-.6-.1-1.1-.2-1.6H12z"
-      />
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
     </svg>
   );
 }

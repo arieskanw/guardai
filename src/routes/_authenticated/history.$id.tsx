@@ -14,7 +14,7 @@ import { Copy, Check } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/history/$id")({
   head: () => ({
     meta: [
-      { title: "Review — AI Code Guardian" },
+      { title: "Review — GuardAI" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -33,24 +33,16 @@ function DetailPage() {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <header className="border-b border-border bg-background">
-        <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
-          <Link to="/" className="flex min-w-0 items-center gap-2">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground">
-              <Shield className="h-5 w-5" />
-            </span>
-            <span className="truncate text-base font-semibold">AI Code Guardian</span>
-          </Link>
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/history">
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
-              {t("hist.back")}
-            </Link>
-          </Button>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:py-12">
+        <div className="mb-6">
+          <Link
+            to="/history"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t("hist.back")}
+          </Link>
+        </div>
         {isLoading && (
           <div className="flex min-h-[200px] items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />

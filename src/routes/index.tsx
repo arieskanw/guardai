@@ -10,7 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Bot,
+  Shield,
   TestTube2,
   ShieldCheck,
   Layers,
@@ -18,13 +18,16 @@ import {
   Zap,
   ArrowRight,
   Check,
+  Sparkles,
+  AlertTriangle,
+  Code2,
+  GitPullRequest,
 } from "lucide-react";
-import heroImg from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AI Code Guardian — AI code review, test generator & security scanner" },
+      { title: "GuardAI — AI code review, test generator & security scanner" },
       {
         name: "description",
         content:
@@ -32,7 +35,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "AI Code Guardian — AI code review, tests & security",
+        content: "GuardAI — AI code review, tests & security",
       },
       {
         property: "og:description",
@@ -47,7 +50,7 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-secondary/30">
       <SiteHeader />
       <Hero />
       <Features />
@@ -62,20 +65,26 @@ function LandingPage() {
 function Hero() {
   const { t } = useI18n();
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{ backgroundImage: "var(--gradient-hero)" }}
-    >
-      <div className="container mx-auto grid gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-28">
-        <div className="max-w-2xl">
+    <section className="relative overflow-hidden">
+      {/* Subtle grid background */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,black,transparent)]" />
+
+      <div className="container relative mx-auto px-4 py-20 sm:px-6 lg:py-28">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="mr-1 h-3 w-3" />
             {t("hero.badge")}
           </span>
+
           <h1 className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {t("hero.title")}
           </h1>
-          <p className="mt-5 text-lg text-muted-foreground">{t("hero.subtitle")}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
+            {t("hero.subtitle")}
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg">
               <Link to="/auth" search={{ mode: "signup" }}>
                 {t("hero.cta")}
@@ -86,16 +95,57 @@ function Hero() {
               <a href="#features">{t("hero.cta2")}</a>
             </Button>
           </div>
+
           <p className="mt-4 text-xs text-muted-foreground">{t("hero.trust")}</p>
         </div>
-        <div className="relative">
-          <img
-            src={heroImg}
-            alt=""
-            width={1600}
-            height={1024}
-            className="w-full rounded-2xl border border-border shadow-[var(--shadow-elegant)]"
-          />
+
+        {/* Preview cards — dashboard-style mockup */}
+        <div className="mx-auto mt-16 grid max-w-4xl gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Code2 className="h-4 w-4" />
+              <span className="font-medium text-foreground">index.tsx</span>
+              <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">TypeScript</span>
+            </div>
+            <pre className="mt-3 overflow-hidden rounded-lg bg-[oklch(0.18_0.03_257)] p-3 text-[10px] leading-relaxed text-[oklch(0.95_0.01_250)]">
+              <code>{`function greet(name: string) {
+  return \`Hello, \${name}!\`;
+}
+
+// Potential issue: no input validation
+const result = greet(userInput);`}</code>
+            </pre>
+            <div className="mt-2 flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-[11px] text-amber-700">1 security finding</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">Score: 72</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <GitPullRequest className="h-4 w-4" />
+              <span className="font-medium text-foreground">PR #42 Review</span>
+              <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">Auto</span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {[
+                { severity: "HIGH", text: "SQL injection pada query builder", line: 24 },
+                { severity: "MEDIUM", text: "Missing error boundary di komponen", line: 56 },
+                { severity: "LOW", text: "Unused import: useState", line: 1 },
+              ].map((f, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                    f.severity === "HIGH" ? "bg-destructive/15 text-destructive" :
+                    f.severity === "MEDIUM" ? "bg-amber-100 text-amber-800" :
+                    "bg-blue-100 text-blue-800"
+                  }`}>{f.severity}</span>
+                  <span className="text-[11px] text-foreground">{f.text}</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">L{f.line}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -103,7 +153,7 @@ function Hero() {
 }
 
 const featureList: Array<{ icon: typeof Bot; t: TKey; d: TKey }> = [
-  { icon: Bot, t: "f1.t", d: "f1.d" },
+  { icon: Shield, t: "f1.t", d: "f1.d" },
   { icon: TestTube2, t: "f2.t", d: "f2.d" },
   { icon: ShieldCheck, t: "f3.t", d: "f3.d" },
   { icon: Layers, t: "f4.t", d: "f4.d" },
@@ -144,6 +194,7 @@ function Pricing() {
       name: t("plan.free"),
       tag: t("plan.free.tag"),
       price: "$0",
+      idrPrice: "0",
       cta: t("plan.free.cta"),
       popular: false,
       features: ["10 reviews / month", "Basic AI review", "Community support"],
@@ -152,6 +203,7 @@ function Pricing() {
       name: t("plan.pro"),
       tag: t("plan.pro.tag"),
       price: "$19",
+      idrPrice: "19rb",
       cta: t("plan.cta"),
       popular: true,
       features: ["Unlimited reviews", "Tests + Security scan", "Custom guidelines", "Priority queue"],
@@ -160,6 +212,7 @@ function Pricing() {
       name: t("plan.team"),
       tag: t("plan.team.tag"),
       price: "$49",
+      idrPrice: "49rb",
       cta: t("plan.cta"),
       popular: false,
       features: ["Everything in Pro", "Multi-user", "Team analytics", "Shared rules"],
@@ -167,7 +220,7 @@ function Pricing() {
   ];
 
   return (
-    <section id="pricing" className="bg-secondary/40 py-20 lg:py-28">
+    <section id="pricing" className="py-20 lg:py-28">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("pricing.title")}</h2>
@@ -193,8 +246,10 @@ function Pricing() {
                 <span className="text-xs text-muted-foreground">{p.tag}</span>
               </div>
               <p className="mt-4">
-                <span className="text-4xl font-bold">{p.price}</span>
-                <span className="ml-1 text-sm text-muted-foreground">{t("plan.month")}</span>
+                <span className="text-4xl font-bold">{p.idrPrice === "0" ? "$0" : p.idrPrice}</span>
+                <span className="ml-1 text-sm text-muted-foreground">
+                  {p.idrPrice === "0" ? "" : t("plan.month")}
+                </span>
               </p>
               <ul className="mt-6 space-y-3 text-sm">
                 {p.features.map((f) => (
