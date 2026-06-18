@@ -126,7 +126,7 @@ export const listPrReviews = createServerFn({ method: "GET" })
 
     const placeholders = ids.map((_, i) => `$${i + 1}`).join(",");
     const { rows } = await query(
-      `SELECT id, repo_full_name, pr_number, pr_title, pr_url, quality_score, findings_count, security_issues_count, status, created_at
+      `SELECT id, repo_full_name, pr_number, pr_title, pr_url, quality_score, findings_count, security_issues_count, status, result, created_at
        FROM pr_reviews
        WHERE installation_id IN (${placeholders})
        ORDER BY created_at DESC
