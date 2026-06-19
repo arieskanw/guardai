@@ -13,7 +13,6 @@ const MAIN_NAV = [
 const MORE_ITEMS = [
   { path: "/history", labelKey: "nav.history", Icon: History },
   { path: "/integrations", labelKey: "nav.integrations", Icon: Github },
-  { path: "/profile", labelKey: "nav.profile", Icon: User },
   { path: "/billing", labelKey: "nav.billing", Icon: CircleDollarSign },
 ] as const;
 
@@ -91,8 +90,16 @@ export function BottomNav() {
                 );
               })}
               <hr className="my-1 border-border" />
+              <Link
+                to="/profile"
+                onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <User className="h-4 w-4" />
+                <span>{t("nav.profile")}</span>
+              </Link>
               <button
-                onClick={signOut}
+                onClick={() => { signOut(); setMoreOpen(false); }}
                 className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <LogOut className="h-4 w-4" />

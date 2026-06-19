@@ -18,7 +18,6 @@ const SIDEBAR_ITEMS = [
   { path: "/guidelines", labelKey: "nav.guidelines", Icon: BookOpen },
   { path: "/history", labelKey: "nav.history", Icon: History },
   { path: "/integrations", labelKey: "nav.integrations", Icon: Github },
-  { path: "/profile", labelKey: "nav.profile", Icon: User },
   { path: "/billing", labelKey: "nav.billing", Icon: CircleDollarSign },
 ];
 
@@ -67,17 +66,26 @@ export function SidebarNav() {
       </nav>
 
       {/* User section at bottom */}
-      <div className="border-t border-border p-4">
-        <div className="flex items-center justify-between">
-          <span className="truncate text-sm text-muted-foreground" title={user?.email}>
-            {user?.email}
-          </span>
+      <div className="border-t border-border p-3">
+        <Link
+          to="/profile"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <User className="h-5 w-5" />
+          <div className="flex-1 truncate">
+            <span className="block">{t("nav.profile")}</span>
+            <span className="block truncate text-xs text-muted-foreground/70" title={user?.email ? user.email : undefined}>
+              {user?.email}
+            </span>
+          </div>
+        </Link>
+        <div className="mt-1 flex items-center justify-end px-3">
           <button
             onClick={handleSignOut}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
-            title={t("nav.signout")}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
+            {t("nav.signout")}
           </button>
         </div>
       </div>
