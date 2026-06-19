@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPrReviewsRouteImport } from './routes/_authenticated/pr-reviews'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
@@ -60,6 +61,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/api/health': typeof ApiHealthRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/api/health': typeof ApiHealthRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/pr-reviews': typeof AuthenticatedPrReviewsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/api/health': typeof ApiHealthRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/api/midtrans/callback': typeof ApiMidtransCallbackRoute
   '/api/auth/github/callback': typeof ApiAuthGithubCallbackRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/pr-reviews'
     | '/profile'
+    | '/api/health'
     | '/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/pr-reviews'
     | '/profile'
+    | '/api/health'
     | '/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/integrations'
     | '/_authenticated/pr-reviews'
     | '/_authenticated/profile'
+    | '/api/health'
     | '/_authenticated/history/$id'
     | '/api/midtrans/callback'
     | '/api/auth/github/callback'
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiMidtransCallbackRoute: typeof ApiMidtransCallbackRoute
   ApiAuthGithubCallbackRoute: typeof ApiAuthGithubCallbackRoute
   ApiPublicGithubWebhookRoute: typeof ApiPublicGithubWebhookRoute
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -425,6 +445,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiMidtransCallbackRoute: ApiMidtransCallbackRoute,
   ApiAuthGithubCallbackRoute: ApiAuthGithubCallbackRoute,
   ApiPublicGithubWebhookRoute: ApiPublicGithubWebhookRoute,
